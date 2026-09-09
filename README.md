@@ -36,10 +36,10 @@ Failsafe: si un robot no recibe `CMD` en 1.5 s, se detiene solo. La GUI reenvía
 
 ## 1 · Sitio web en GitHub Pages
 
-1. En tu repo (`Yum-Kaaxa` o uno nuevo) copia la carpeta `docs/` a la raíz.
+1. El repo es [`Dquezada2108/kaax_app`](https://github.com/Dquezada2108/kaax_app); `docs/` ya está en la raíz.
 2. Copia tus logos a `docs/assets/logo_sm.png` y `docs/assets/logo_k_sm.png`.
 3. GitHub → Settings → Pages → Source: **Deploy from a branch** → Branch `main`, folder **/docs** → Save.
-4. Abre `https://<usuario>.github.io/<repo>/` en **Chrome o Edge de escritorio** (Web Serial no existe en Firefox/Safari ni en móvil).
+4. Abre **https://dquezada2108.github.io/kaax_app/** en **Chrome o Edge de escritorio** (Web Serial no existe en Firefox/Safari ni en móvil).
 5. Ajustes → Transporte *Raspberry Pi · WebSocket*, dirección `https://10.42.0.1:8443` → Guardar → **Conectar**. (Para los Heltec: transporte *USB · Heltec base* y elige el puerto.)
 6. Instálala como app desde la barra de direcciones. Así abre sin internet — ver **§12**.
 
@@ -132,7 +132,7 @@ No hay medición de baterías: sin ADS1115 ni divisores, la GUI simplemente no m
 ### 3.2 Instalación (un solo comando)
 
 ```bash
-git clone https://github.com/TUUSUARIO/Yum-Kaaxa.git ~/kaax
+git clone https://github.com/Dquezada2108/kaax_app.git ~/kaax
 bash ~/kaax/pi/install.sh
 ```
 
@@ -200,7 +200,7 @@ Sin backend no hay cuentas reales. Firebase (plan gratuito Spark) da login con G
 2. **Build → Authentication → Get started.** Activa **Correo/contraseña** y **Google** (elige tu correo como *support email*).
 3. **Build → Firestore Database → Crear base de datos** → modo producción → región `nam5` o `us-central`.
 4. **Configuración del proyecto (⚙) → Tus apps → Web (</>)** → registra la app → copia el objeto `firebaseConfig` y pégalo en `docs/config.js`, en el bloque `firebase`.
-5. **Authentication → Settings → Dominios autorizados** → *Agregar dominio* → `TUUSUARIO.github.io`. Sin esto el login con Google falla en producción.
+5. **Authentication → Settings → Dominios autorizados** → *Agregar dominio* → `dquezada2108.github.io`. Sin esto el login con Google falla **solo en producción** y funciona en local, que es un síntoma confuso.
 
 ### 6.2 Reglas de seguridad
 **Firestore → Reglas** → pega el contenido de `firestore.rules` (viene en el paquete) → *Publicar*.
@@ -229,14 +229,14 @@ Si dejas `config.firebase` sin tocar, la app sigue funcionando en modo local con
 
 **Primera vez**
 ```bash
-cd ~/Yum-Kaaxa                 # tu repo clonado
+cd ~/kaax_app                  # tu repo clonado
 # copia aquí las carpetas docs/, firmware/, pi/ y firestore.rules del zip
 git add .
 git commit -m "Kaax: cuentas Firebase, cámara, visión y control Xbox"
 git push
 ```
 Luego en GitHub: **Settings → Pages → Source: Deploy from a branch → Branch `main`, carpeta `/docs` → Save.**
-Tu app queda en `https://TUUSUARIO.github.io/Yum-Kaaxa/`.
+Tu app queda en **https://dquezada2108.github.io/kaax_app/**.
 
 **Cada actualización**
 ```bash
