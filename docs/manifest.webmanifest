@@ -1,0 +1,16 @@
+{
+  "name": "Kaax · Estación base",
+  "short_name": "Kaax",
+  "description": "Estación de control de la flota Kaax — DAY1 Robotics",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4fbfd",
+  "theme_color": "#0077b6",
+  "lang": "es",
+  "icons": [
+    { "src": "assets/logo_k_sm.png", "sizes": "any", "type": "image/png", "purpose": "any" },
+    { "src": "assets/logo_k_sm.png", "sizes": "any", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,4 @@
+aiohttp>=3.9
+pyserial>=3.5
+pynmea2>=1.19
+opencv-python-headless>=4.9

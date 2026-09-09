@@ -1,0 +1,14 @@
+# Certificados y llaves de la Pi: la llave privada de la CA NUNCA va al repo.
+# Se generan en cada Pi con pi/setup_tls.sh.
+pi/certs/
+*.key
+*.pem
+
+# Token de administración de la Pi: se genera solo en el primer arranque.
+pi/kaax_token.txt
+
+# Basura del sistema
+.DS_Store
+__pycache__/
+*.pyc
+venv/

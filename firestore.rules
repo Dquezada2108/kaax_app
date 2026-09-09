@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function me()      { return get(/databases/$(db)/documents/users/$(request.auth.uid)).data; }
+    function signedIn(){ return request.auth != null; }
+    function isAdmin() { return signedIn() && me().role == 'admin' && me().status == 'activo'; }
+
+    // Claves de administrador: el cliente NUNCA las lee ni escribe.
+    // Las reglas sí pueden consultarlas con exists(), y eso valida el alta de admin.
+    match /adminKeys/{hash} {
+      allow read, write: if false;
+    }
+
+    match /users/{uid} {
+      // Cada quien lee su perfil; un admin lee los de su equipo y las solicitudes que le llegan.
+      allow read: if signedIn() && (
+        request.auth.uid == uid ||
+        (isAdmin() && (resource.data.teamId == me().teamId || resource.data.requestedTeamId == me().teamId))
+      );
+
+      // Alta: técnico libre; admin solo si la clave secreta existe en adminKeys.
+      allow create: if signedIn() && request.auth.uid == uid && (
+        (request.resource.data.role == 'tecnico' && request.resource.data.status == 'pendiente') ||
+        (request.resource.data.role == 'admin'
+          && exists(/databases/$(db)/documents/adminKeys/$(request.resource.data.adminKeyHash)))
+      );
+
+      // El propio usuario solo cambia su nombre o a qué equipo pide entrar,
+      // nunca su rol ni su estado: eso lo hace el admin del equipo.
+      allow update: if signedIn() && (
+        (request.auth.uid == uid
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.teamId == resource.data.teamId
+          && (request.resource.data.status == resource.data.status || request.resource.data.status == 'pendiente'))
+        ||
+        (isAdmin() && (resource.data.requestedTeamId == me().teamId || resource.data.teamId == me().teamId))
+      );
+
+      allow delete: if false;
+    }
+
+    match /teams/{tid} {
+      allow read: if signedIn();                       // para elegir equipo al registrarse
+      // Solo un admin ya validado crea equipos. La rama antigua permitía a
+      // cualquier usuario firmado crear uno, lo que saltaba la clave secreta.
+      allow create: if isAdmin() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isAdmin() && resource.data.ownerUid == request.auth.uid;
+      allow delete: if false;
+
+      // Sesiones compartidas: solo miembros activos del equipo.
+      match /sessions/{sid} {
+        allow read, write: if signedIn() && me().teamId == tid && me().status == 'activo';
+      }
+    }
+  }
+}

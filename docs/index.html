@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kaax · Estación base</title>
+<link rel="icon" href="assets/logo_k_sm.png">
+<meta name="theme-color" content="#0077b6">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/logo_k_sm.png">
+<!-- Todo local: la app debe cargar con cero internet (modo campo). -->
+<link rel="stylesheet" href="vendor/fonts/fonts.css">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.min.css">
+<script src="vendor/leaflet/leaflet.min.js"></script>
+<script src="vendor/chart.umd.min.js"></script>
+<script src="config.js"></script>
+<!-- Visión por computadora: pesado y opcional. Se carga bajo demanda desde la
+     pestaña Cámara y queda en caché para usarse después sin internet. -->
+<style>
+  :root{
+    --teal-50:#e6f7fb; --teal-100:#b8e7f0; --teal-300:#4dcbe0; --teal-500:#00b4d8;
+    --teal-600:#0096b5; --teal-700:#0077b6; --teal-900:#023e58;
+    --ink:#0a2535; --ink-2:#2a4858; --muted:#6b8a9c; --line:#dde9ef; --line-2:#eef5f8;
+    --bg:#ffffff; --bg-soft:#f7fbfd; --red:#e63946; --amber:#f4a261; --green:#2a9d8f;
+    --shadow:0 1px 2px rgba(10,37,53,.05),0 4px 14px rgba(10,37,53,.06);
+    --r:10px; --ff:'Space Grotesk',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+    --topbar:58px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{font-family:var(--ff);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.45;font-size:15px;overflow:hidden}
+  a{color:var(--teal-700);text-decoration:none}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:7px 9px;background:#fff;width:100%}
+  input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--teal-300);outline-offset:1px}
+  .mono{font-family:var(--mono)}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  /* top bar */
+  .topbar{height:var(--topbar);display:flex;align-items:center;justify-content:space-between;padding:0 22px;border-bottom:1px solid var(--line);background:#fff;position:relative;z-index:1200}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:.18em;font-size:.82rem}
+  .brand img{height:28px;width:auto;display:block}
+  .brand .word{color:var(--teal-700)}
+  .brand .sep{width:1px;height:22px;background:var(--line)}
+  nav.tabs{display:flex;gap:2px;background:var(--bg-soft);padding:3px;border-radius:999px;border:1px solid var(--line)}
+  nav.tabs a{padding:6px 14px;border-radius:999px;font-size:.88rem;font-weight:500;color:var(--ink-2)}
+  nav.tabs a.active{background:#fff;color:var(--teal-700);box-shadow:var(--shadow)}
+  .right{display:flex;align-items:center;gap:10px}
+  .pill{display:flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:.8rem;font-family:var(--mono);background:#fff}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+  .dot.on{background:var(--green);box-shadow:0 0 0 3px rgba(42,157,143,.18)}
+  .dot.off{background:var(--red)}
+  .dot.sim{background:var(--amber)}
+  .btn{padding:7px 14px;border-radius:8px;font-weight:600;font-size:.88rem;border:1px solid var(--line);background:#fff;color:var(--ink);transition:background .12s}
+  .btn:hover{background:var(--bg-soft)}
+  .btn.primary{background:var(--teal-700);color:#fff;border-color:var(--teal-700)}
+  .btn.primary:hover{background:var(--teal-600)}
+  .btn.danger{background:#fff;color:var(--red);border-color:var(--red)}
+  .btn.danger:hover{background:#fff1f2}
+  .btn.ghost{border-color:transparent;color:var(--teal-700)}
+  .btn.sm{padding:4px 10px;font-size:.8rem}
+  .btn[disabled]{opacity:.45;cursor:not-allowed}
+
+
+  /* login */
+  .login{position:fixed;inset:0;z-index:3000;display:grid;grid-template-columns:1fr 1fr;background:#fff}
+  .login:not(.show){display:none}
+  .login .art{background:linear-gradient(160deg,var(--teal-900),var(--teal-700) 70%,var(--teal-500));color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;padding:40px;text-align:center}
+  .login .art img{height:120px;width:auto;filter:brightness(0) invert(1)}
+  .login .art h1{font-size:1.6rem;font-weight:600;letter-spacing:.2em}
+  .login .art p{opacity:.8;font-size:.9rem;max-width:32ch;line-height:1.5}
+  .login .form{display:flex;flex-direction:column;justify-content:center;padding:40px;max-width:420px;width:100%;margin:0 auto;gap:12px}
+  .login .form h2{font-size:1.2rem;font-weight:600;margin-bottom:4px}
+  .login .form .sub{color:var(--muted);font-size:.9rem;margin-bottom:10px}
+  .login .err{color:var(--red);font-size:.85rem;min-height:1.2em}
+  @media(max-width:700px){.login{grid-template-columns:1fr}.login .art{padding:26px}.login .art img{height:70px}}
+
+
+  /* auth screens */
+  .login .form{gap:10px}
+  .login .form .steps{display:flex;gap:6px;margin-bottom:6px}
+  .login .form .steps i{height:3px;flex:1;background:var(--line);border-radius:2px}
+  .login .form .steps i.on{background:var(--teal-700)}
+  .gbtn{display:flex;align-items:center;justify-content:center;gap:10px;border:1px solid var(--line);border-radius:8px;padding:10px;font-weight:500;background:#fff}
+  .gbtn:hover{background:var(--bg-soft)}
+  .gbtn svg{width:18px;height:18px}
+  .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.78rem;margin:2px 0}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+  .swap{font-size:.85rem;color:var(--muted);text-align:center}
+  .step{display:none;flex-direction:column;gap:10px}
+  .step.on{display:flex}
+  .pick{display:grid;gap:8px}
+  .pick button{border:1px solid var(--line);border-radius:var(--r);padding:14px;text-align:left}
+  .pick button:hover{border-color:var(--teal-300);background:var(--bg-soft)}
+  .pick .t{font-weight:600;display:block}
+  .pick .d{font-size:.82rem;color:var(--muted)}
+  .wait{text-align:center;padding:10px 0}
+  .wait .big{font-size:2.4rem;line-height:1}
+
+  /* camera */
+  .camwrap{position:relative;background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center}
+  .camwrap img{width:100%;height:100%;object-fit:contain;display:block}
+  .camwrap .off{color:var(--muted);font-size:.88rem;padding:20px;text-align:center}
+  .cvbar{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.8rem}
+  .cvrow{display:flex;align-items:center;gap:8px;margin-top:4px}
+  .cvrow span:first-child{width:110px;color:var(--ink-2)}
+  .meter{flex:1;height:6px;background:var(--line-2);border-radius:3px;overflow:hidden}
+  .meter i{display:block;height:100%;background:var(--teal-500)}
+  .meter i.hit{background:var(--green)}
+  .cvrow .p{width:44px;text-align:right;font-family:var(--mono);font-size:.75rem}
+
+  /* gamepad + misc */
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-family:var(--mono);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+  .badge.ok{color:var(--green);border-color:var(--green)}
+  .memrow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line-2);font-size:.88rem}
+  .memrow:last-child{border-bottom:none}
+  .memrow .who b{font-weight:600} .memrow .who span{color:var(--muted);font-size:.8rem;display:block}
+  .gpsdiag{font-family:var(--mono);font-size:.72rem;background:var(--bg-soft);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:150px;overflow:auto;white-space:pre-wrap}
+
+  /* views */
+
+  /* ---- modo campo y panel de la Raspberry ---- */
+  .field-btn{border-color:var(--teal-300);color:var(--teal-700)}
+  .field-btn.on{background:var(--amber);border-color:var(--amber);color:#3a2500}
+  .fieldbar{display:none;align-items:center;gap:10px;padding:7px 22px;font-size:.83rem;
+    background:#fff7ec;border-bottom:1px solid #f0d9b8;color:#6b4a12}
+  .fieldbar.show{display:flex}
+  .fieldbar .fb-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);flex:none;
+    animation:fbpulse 2s ease-in-out infinite}
+  @keyframes fbpulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .fieldbar #fb-online{margin-left:auto}
+  body.field main{height:calc(100% - var(--topbar) - 35px)}
+  .panel-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .netnow{font-family:var(--mono);font-size:.85rem;background:var(--bg-soft);
+    border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:10px}
+  .term{font-family:var(--mono);font-size:.74rem;line-height:1.5;background:var(--teal-900);
+    color:#cfe9f3;border-radius:8px;padding:12px;margin-top:10px;max-height:260px;
+    overflow:auto;white-space:pre-wrap;word-break:break-all}
+  .bar{height:6px;background:var(--line-2);border-radius:3px;overflow:hidden;margin-top:12px}
+  .bar>i{display:block;height:100%;width:0;background:var(--teal-500);transition:width .2s}
+  main{height:calc(100% - var(--topbar));position:relative}
+  .view{height:100%}
+  .view:not(.show){display:none!important}
+  .view.show{display:block}
+
+  /* fleet: map + side panel + control dock */
+  .fleet.show{display:grid;grid-template-columns:1fr 340px;grid-template-rows:1fr auto;height:100%}
+  #map-fleet{grid-row:1/3;height:100%;z-index:1}
+  .side{border-left:1px solid var(--line);background:#fff;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+  .side h2,.panel h2{font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.06em;margin-bottom:6px}
+  .robot{border:1px solid var(--line);border-radius:var(--r);padding:12px;cursor:pointer;position:relative;transition:border-color .12s}
+  .robot:hover{border-color:var(--teal-300)}
+  .robot.sel{border-color:var(--teal-700);box-shadow:0 0 0 2px var(--teal-100)}
+  .robot .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .robot .nm{font-weight:600}
+  .robot .nm i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle}
+  .robot .age{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+  .robot .age.stale{color:var(--red)}
+  .robot .grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:.8rem}
+  .robot .k{color:var(--muted)}
+  .robot .v{font-family:var(--mono);text-align:right}
+  .bat{height:5px;background:var(--line-2);border-radius:3px;overflow:hidden;margin-top:6px}
+  .bat i{display:block;height:100%;background:var(--green);border-radius:3px}
+  .bat i.warn{background:var(--amber)} .bat i.low{background:var(--red)}
+  .weather{font-size:.82rem;display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+  .weather .v{font-family:var(--mono)}
+
+  .dock{grid-column:1;border-top:1px solid var(--line);background:#fff;display:grid;grid-template-columns:auto auto 1fr;gap:20px;padding:12px 18px;align-items:center;z-index:2}
+  .dpad{display:grid;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px);gap:4px}
+  .dpad button{border:1px solid var(--line);border-radius:8px;font-size:1.15rem;color:var(--teal-700);background:#fff;user-select:none;-webkit-user-select:none}
+  .dpad button.on,.dpad button:active{background:var(--teal-700);color:#fff;border-color:var(--teal-700)}
+  .dpad .c{background:var(--bg-soft);border:1px solid var(--line-2);border-radius:8px}
+  .ctl{display:flex;flex-direction:column;gap:8px;min-width:210px}
+  .ctl label{font-size:.75rem;color:var(--muted);display:flex;justify-content:space-between}
+  input[type=range]{accent-color:var(--teal-700);padding:0;border:none}
+  .ctl .row{display:flex;gap:8px}
+  .toggle{display:flex;align-items:center;gap:8px;font-size:.85rem}
+  .toggle input{width:auto}
+  .log{font-family:var(--mono);font-size:.7rem;background:var(--bg-soft);border:1px solid var(--line);border-radius:8px;height:150px;overflow-y:auto;padding:8px 10px;color:var(--ink-2);white-space:pre}
+  .log .tx{color:var(--teal-700)} .log .err{color:var(--red)} .log .sys{color:var(--muted)}
+  .hint{font-size:.72rem;color:var(--muted)}
+
+  /* grid view */
+  .gridv.show{display:grid;grid-template-columns:1fr 320px;height:100%}
+  #map-grid{height:100%;z-index:1}
+  .legend{display:flex;flex-direction:column;gap:6px;font-size:.82rem}
+  .legend i{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:8px;vertical-align:-2px;border:1px solid rgba(0,0,0,.15)}
+  .kpi{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+  .kpi .l{font-size:.75rem;color:var(--muted)}
+  .kpi .n{font-family:var(--mono);font-size:1.45rem;font-weight:600;color:var(--teal-900);line-height:1.2}
+  .kpi .u{font-size:.75rem;color:var(--muted);margin-left:4px;font-family:var(--ff)}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .field{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--ink-2)}
+  .field.row{flex-direction:row;align-items:center;gap:8px}
+
+  /* generic scroll page */
+  .page{height:100%;overflow-y:auto;padding:22px 26px;max-width:1100px;margin:0 auto}
+  .page h1{font-size:1.35rem;font-weight:600;margin-bottom:4px}
+  .page .sub{color:var(--muted);margin-bottom:18px;font-size:.9rem}
+  .panel{border:1px solid var(--line);border-radius:var(--r);padding:16px;background:#fff;margin-bottom:14px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .timer{font-family:var(--mono);font-size:2.6rem;font-weight:600;color:var(--teal-900);letter-spacing:.02em}
+  table{width:100%;border-collapse:collapse;font-size:.83rem}
+  th,td{padding:8px 8px;border-bottom:1px solid var(--line-2);text-align:left}
+  th{color:var(--muted);font-weight:500;font-size:.75rem}
+  td.num,th.num{text-align:right;font-family:var(--mono)}
+  tr.click{cursor:pointer} tr.click:hover{background:var(--bg-soft)}
+  .ai{background:var(--bg-soft);border:1px dashed var(--teal-300);border-radius:var(--r);padding:14px;font-size:.9rem;white-space:pre-wrap;min-height:60px}
+  .empty{color:var(--muted);font-size:.9rem;padding:18px;text-align:center;border:1px dashed var(--line);border-radius:var(--r)}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .2s;z-index:2000}
+  .toast.show{opacity:1}
+  .estop{font-size:1rem;padding:12px 18px;letter-spacing:.06em}
+  .stopbar{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:1000}
+
+  /* leaflet grid cells */
+  .cell{cursor:pointer}
+  .rl{background:#fff;border:2px solid #fff;border-radius:50%;width:16px;height:16px;box-shadow:0 0 0 2px rgba(10,37,53,.25)}
+  .leaflet-container{font-family:var(--ff)}
+
+  @media(max-width:900px){
+    .fleet.show{grid-template-columns:1fr;grid-template-rows:55vh auto auto}
+    #map-fleet{grid-row:1}
+    .side{border-left:none;border-top:1px solid var(--line)}
+    .dock{grid-template-columns:1fr;}
+    .gridv.show{grid-template-columns:1fr}
+    .cols,.cols3{grid-template-columns:1fr}
+    nav.tabs a{padding:6px 9px;font-size:.8rem}
+    .brand .word,.brand .sep{display:none}
+  }
+  @media print{
+    .topbar,nav,.btn{display:none!important}
+    body{overflow:visible} main{height:auto} .page{overflow:visible}
+    .view{display:none} .view.show{display:block}
+  }
+</style>
+</head>
+<body>
+
+<div class="login" id="login">
+  <div class="art">
+    <img src="assets/logo_k_sm.png" alt="" onerror="this.style.display='none'">
+    <h1>KAAX</h1>
+    <p>Estación base de la flota · DAY1 Robotics</p>
+  </div>
+  <div class="form">
+
+    <!-- paso 1: entrar -->
+    <div class="step on" id="st-in">
+      <h2>Entrar</h2>
+      <div class="sub">Tu nombre queda registrado como operador en cada sesión de limpieza.</div>
+      <button class="gbtn" id="g-in"><svg viewBox="0 0 48 48"><path fill="#4285F4" d="M45 24c0-1.6-.1-2.7-.4-4H24v7.5h12c-.2 2-1.5 5-4.4 7l6.7 5.2C42.2 36 45 30.6 45 24z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.7-5.2c-1.8 1.3-4.3 2.2-7.8 2.2-5.9 0-10.9-3.9-12.7-9.3l-7 5.4C7.9 41 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.3 28.4c-.5-1.4-.8-2.9-.8-4.4s.3-3 .7-4.4l-7-5.4C3.5 17.1 2.5 20.4 2.5 24s1 6.9 2.7 9.8l6.1-5.4z"/><path fill="#EA4335" d="M24 9.5c3.3 0 5.5 1.4 6.8 2.6l5.9-5.8C33.1 3 29 1 24 1 15.4 1 7.9 6 5.2 14.2l7 5.4C14 14.2 19 9.5 24 9.5z"/></svg>Continuar con Google</button>
+      <div class="or">o con correo</div>
+      <div class="field"><span>Correo</span><input id="l-user" type="email" autocomplete="username" placeholder="tu@correo.com"></div>
+      <div class="field"><span>Contraseña</span><input id="l-pass" type="password" autocomplete="current-password"></div>
+      <div class="err" id="l-err"></div>
+      <button class="btn primary" id="l-go">Entrar</button>
+      <div class="swap">¿Sin cuenta? <a href="#" id="to-up">Crear una</a> · <a href="#" id="to-reset">Olvidé mi contraseña</a></div>
+    </div>
+
+    <!-- paso 2: registro -->
+    <div class="step" id="st-up">
+      <div class="steps"><i class="on"></i><i></i></div>
+      <h2>Crear cuenta</h2>
+      <div class="sub">Primero tus datos; después eliges el tipo de cuenta.</div>
+      <button class="gbtn" id="g-up"><svg viewBox="0 0 48 48"><path fill="#4285F4" d="M45 24c0-1.6-.1-2.7-.4-4H24v7.5h12c-.2 2-1.5 5-4.4 7l6.7 5.2C42.2 36 45 30.6 45 24z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.7-5.2c-1.8 1.3-4.3 2.2-7.8 2.2-5.9 0-10.9-3.9-12.7-9.3l-7 5.4C7.9 41 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.3 28.4c-.5-1.4-.8-2.9-.8-4.4s.3-3 .7-4.4l-7-5.4C3.5 17.1 2.5 20.4 2.5 24s1 6.9 2.7 9.8l6.1-5.4z"/><path fill="#EA4335" d="M24 9.5c3.3 0 5.5 1.4 6.8 2.6l5.9-5.8C33.1 3 29 1 24 1 15.4 1 7.9 6 5.2 14.2l7 5.4C14 14.2 19 9.5 24 9.5z"/></svg>Registrarme con Google</button>
+      <div class="or">o con correo</div>
+      <div class="field"><span>Nombre completo</span><input id="u-name" placeholder="Diego Quezada"></div>
+      <div class="field"><span>Correo</span><input id="u-mail" type="email" autocomplete="username"></div>
+      <div class="field"><span>Contraseña</span><input id="u-pass" type="password" autocomplete="new-password" placeholder="mínimo 6 caracteres"></div>
+      <div class="err" id="u-err"></div>
+      <button class="btn primary" id="u-go">Continuar</button>
+      <div class="swap">¿Ya tienes cuenta? <a href="#" id="to-in">Entrar</a></div>
+    </div>
+
+    <!-- paso 3: rol -->
+    <div class="step" id="st-role">
+      <div class="steps"><i class="on"></i><i class="on"></i></div>
+      <h2>Tipo de cuenta</h2>
+      <div class="sub" id="role-who"></div>
+      <div class="pick">
+        <button id="pick-tec"><span class="t">Técnico</span><span class="d">Opera los robots y registra sesiones. Un administrador debe aceptarte en su equipo.</span></button>
+        <button id="pick-adm"><span class="t">Administrador</span><span class="d">Crea el equipo, acepta técnicos y ve los reportes de todos. Requiere clave secreta.</span></button>
+      </div>
+      <div class="err" id="r-err"></div>
+    </div>
+
+    <!-- paso 3a: admin -->
+    <div class="step" id="st-adm">
+      <h2>Cuenta de administrador</h2>
+      <div class="sub">La clave la define quien administra el proyecto en Firebase.</div>
+      <div class="field"><span>Nombre del equipo</span><input id="a-team" placeholder="DAY1 Robotics · PrepaTec"></div>
+      <div class="field"><span>Clave secreta</span><input id="a-secret" type="password"></div>
+      <div class="err" id="a-err"></div>
+      <button class="btn primary" id="a-go">Crear equipo</button>
+      <div class="swap"><a href="#" id="adm-back">Volver</a></div>
+    </div>
+
+    <!-- paso 3b: técnico elige equipo -->
+    <div class="step" id="st-team">
+      <h2>Únete a un equipo</h2>
+      <div class="sub">El administrador recibirá tu solicitud y deberá aceptarla.</div>
+      <div class="field"><span>Equipo</span><select id="t-team"></select></div>
+      <div class="err" id="t-err"></div>
+      <button class="btn primary" id="t-go">Enviar solicitud</button>
+      <div class="swap"><a href="#" id="team-back">Volver</a></div>
+    </div>
+
+    <!-- paso 4: pendiente -->
+    <div class="step" id="st-wait">
+      <div class="wait"><div class="big">⏳</div></div>
+      <h2>Solicitud enviada</h2>
+      <div class="sub" id="w-msg">Tu administrador debe aceptarte antes de que puedas operar la flota. Esta pantalla se actualiza sola.</div>
+      <button class="btn" id="w-check">Revisar de nuevo</button>
+      <div class="swap"><a href="#" id="w-out">Salir</a></div>
+    </div>
+
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="assets/logo_sm.png" alt="DAY1 Robotics" onerror="this.style.display='none'">
+    <span class="sep"></span>
+    <img src="assets/logo_k_sm.png" alt="Kaax" onerror="this.style.display='none'">
+    <span class="word">KAAX</span>
+  </div>
+  <nav class="tabs" id="tabs">
+    <a href="#/flota">Flota</a>
+    <a href="#/camara">Cámara</a>
+    <a href="#/cuadricula">Cuadrícula</a>
+    <a href="#/sesion">Sesión</a>
+    <a href="#/reportes">Reportes</a>
+    <a href="#/raspberry">Raspberry</a>
+    <a href="#/equipo" id="tab-equipo" style="display:none">Equipo</a>
+    <a href="#/ajustes">Ajustes</a>
+  </nav>
+  <div class="right">
+    <button class="btn field-btn" id="btn-offline" title="Trabajar sin internet">Modo campo</button>
+    <div class="pill" id="user-pill" title="Cerrar sesión" style="cursor:pointer"><span id="user-lbl"></span></div>
+    <div class="pill"><span class="dot" id="conn-dot"></span><span id="conn-lbl">sin enlace</span></div>
+    <button class="btn primary" id="btn-connect">Conectar</button>
+  </div>
+</header>
+
+<div class="fieldbar" id="fieldbar">
+  <span class="fb-dot"></span>
+  <span id="fieldbar-txt">Modo campo activo · lo que captures se guarda aquí y se sube al volver</span>
+  <button class="btn sm" id="fb-online">Volver a línea</button>
+</div>
+
+<main>
+
+<!-- ====== FLOTA ====== -->
+<section class="view fleet" id="v-flota">
+  <div id="map-fleet"></div>
+  <aside class="side">
+    <div>
+      <h2>Robots</h2>
+      <div id="robots"></div>
+    </div>
+    <div>
+      <h2>Clima en la zona</h2>
+      <div class="weather" id="weather"><span class="hint">Cargando…</span></div>
+    </div>
+    <div class="hint" id="zone-lbl"></div>
+  </aside>
+  <div class="dock">
+    <div class="dpad">
+      <span></span><button data-k="up">▲</button><span></span>
+      <button data-k="left">◀</button><span class="c"></span><button data-k="right">▶</button>
+      <span></span><button data-k="down">▼</button><span></span>
+    </div>
+    <div class="ctl">
+      <label>Potencia <span class="num" id="thr-lbl">60 %</span></label>
+      <input type="range" id="thr" min="20" max="100" value="60">
+      <div class="row">
+        <label class="toggle"><input type="checkbox" id="net"> Redes abajo</label>
+        <select id="target" style="width:auto"></select>
+      </div>
+      <div class="row">
+        <button class="btn danger estop" id="estop">■ Paro de emergencia</button>
+      </div>
+      <div class="hint">Flechas o WASD · mantener para avanzar · Espacio = paro</div>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+</section>
+
+<!-- ====== CUADRÍCULA ====== -->
+<section class="view gridv" id="v-cuadricula">
+  <div id="map-grid"></div>
+  <aside class="side">
+    <div>
+      <h2>Zona de trabajo</h2>
+      <div class="kpis">
+        <div class="kpi"><div class="l">Cuadrantes limpios</div><div class="n" id="g-clean">0<span class="u" id="g-total">/ 0</span></div></div>
+        <div class="kpi"><div class="l">Área limpia</div><div class="n" id="g-area">0<span class="u">m²</span></div></div>
+        <div class="kpi"><div class="l">Recorridos por GPS</div><div class="n" id="g-visited">0</div></div>
+      </div>
+    </div>
+    <div>
+      <h2>Cómo usar</h2>
+      <div class="legend">
+        <div><i style="background:rgba(0,119,182,.08)"></i>Pendiente · clic para marcar limpio</div>
+        <div><i style="background:rgba(244,162,97,.45)"></i>Recorrido por un robot (GPS)</div>
+        <div><i style="background:rgba(42,157,143,.55)"></i>Limpio · clic de nuevo para deshacer</div>
+      </div>
+    </div>
+    <div class="field"><span>Tamaño de cuadrante (m)</span><input type="number" id="g-size" min="2" max="200"></div>
+    <div class="cols" style="gap:8px">
+      <div class="field"><span>Columnas</span><input type="number" id="g-cols" min="2" max="60"></div>
+      <div class="field"><span>Filas</span><input type="number" id="g-rows" min="2" max="60"></div>
+    </div>
+    <div class="cols" style="gap:8px">
+      <button class="btn" id="g-here">Mi ubicación</button>
+      <button class="btn" id="g-center">Centrar aquí</button>
+    </div>
+    <label class="toggle"><input type="checkbox" id="g-follow"> Seguir el GPS del robot</label>
+    <button class="btn" id="g-reset">Reiniciar cuadrantes</button>
+    <div class="hint">"Mi ubicación" usa el GPS de esta computadora; "Seguir el GPS del robot" recentra la cuadrícula donde esté navegando. "Centrar aquí" fija la cuadrícula en el centro actual del mapa. El estado se guarda en este navegador.</div>
+  </aside>
+</section>
+
+<!-- ====== SESIÓN ====== -->
+<section class="view" id="v-sesion">
+  <div class="page">
+    <h1>Sesión de limpieza</h1>
+    <div class="sub">Cronómetro, distancia y área se calculan con el GPS de cada robot. El peso lo capturas tú al pesar las redes.</div>
+    <div class="cols">
+      <div class="panel">
+        <div class="timer" id="s-timer">00:00:00</div>
+        <div class="hint" id="s-state">Sin sesión activa</div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn primary" id="s-start">Iniciar sesión</button>
+          <button class="btn danger" id="s-stop" disabled>Terminar y guardar</button>
+        </div>
+        <div class="field" style="margin-top:14px"><span>Lugar</span><input id="s-site" placeholder="Presa, laguna o playa"></div>
+        <div class="field" style="margin-top:8px"><span>Operadores</span><input id="s-ops" placeholder="Quezada, Yael, Carvajal"></div>
+      </div>
+      <div class="panel">
+        <h2>En vivo</h2>
+        <div class="kpis">
+          <div class="kpi"><div class="l">Distancia total</div><div class="n" id="s-dist">0<span class="u">m</span></div></div>
+          <div class="kpi"><div class="l">Velocidad media</div><div class="n" id="s-spd">0<span class="u">km/h</span></div></div>
+          <div class="kpi"><div class="l">Área barrida</div><div class="n" id="s-area">0<span class="u">m²</span></div></div>
+          <div class="kpi"><div class="l">Cuadrantes limpios</div><div class="n" id="s-cells">0</div></div>
+        </div>
+        <table style="margin-top:12px"><thead><tr><th>Robot</th><th class="num">m</th><th class="num">km/h med.</th><th class="num">km/h máx.</th><th class="num">Bat. mín.</th></tr></thead><tbody id="s-robots"></tbody></table>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Material retirado (kg)</h2>
+      <div class="cols3" id="s-weights"></div>
+      <div class="field" style="margin-top:10px"><span>Notas</span><textarea id="s-notes" rows="3" placeholder="Condiciones, incidencias, fauna observada…"></textarea></div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== REPORTES ====== -->
+<section class="view" id="v-reportes">
+  <div class="page">
+    <h1>Reportes</h1>
+    <div class="sub">Historial de sesiones guardadas en este navegador.</div>
+    <div class="kpis" id="r-kpis"></div>
+    <div class="panel" style="margin-top:14px"><canvas id="r-chart" height="110"></canvas></div>
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h2 style="margin:0">Sesiones</h2>
+        <div style="display:flex;gap:6px">
+          <button class="btn sm" id="r-csv">Exportar CSV</button>
+          <button class="btn sm" id="r-json">Exportar JSON</button>
+          <button class="btn sm" id="r-import">Importar</button>
+          <button class="btn sm" id="r-print">Imprimir / PDF</button>
+        </div>
+      </div>
+      <div id="r-table"></div>
+    </div>
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h2 style="margin:0">Análisis con IA</h2>
+        <button class="btn sm primary" id="r-ai">Analizar sesiones</button>
+      </div>
+      <div class="ai" id="r-ai-out">Genera un resumen de tendencias, eficiencia por robot y recomendaciones a partir de las sesiones guardadas.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== RASPBERRY ====== -->
+<section class="view" id="v-raspberry">
+  <div class="page">
+    <h1>Raspberry</h1>
+    <div class="sub">Administra la Pi desde aquí, sin monitor ni teclado. Las acciones que cambian algo piden el token de <span class="mono">Ajustes</span>.</div>
+
+    <div class="panel">
+      <div class="panel-hd">
+        <h2>Estado</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="badge" id="pi-badge">sin consultar</span>
+          <button class="btn sm" id="pi-refresh">Actualizar</button>
+        </div>
+      </div>
+      <div class="kpis" id="pi-kpis"><div class="empty">Pulsa «Actualizar» para consultar la Pi.</div></div>
+    </div>
+
+    <div class="cols">
+      <div class="panel">
+        <h2>Red de la Pi</h2>
+        <div class="hint">La Pi tiene una sola antena: o emite el hotspot <b>o</b> está en tu WiFi, nunca las dos. En el agua va en hotspot; para actualizarla o descargar cosas, pásala a tu red.</div>
+        <div class="netnow" id="pi-net">—</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn" id="pi-hotspot">Volver al hotspot</button>
+          <button class="btn" id="pi-scan">Buscar redes</button>
+        </div>
+        <div id="pi-wifi" style="display:none;margin-top:10px">
+          <div class="field"><span>Red</span><select id="pi-ssid"></select></div>
+          <div class="field" style="margin-top:8px"><span>Contraseña</span><input id="pi-psk" type="password" placeholder="dejar vacío si es abierta"></div>
+          <div class="field" style="margin-top:8px"><span>Volver al hotspot solo en (min)</span><input id="pi-revert" type="number" value="5" min="1" max="60"></div>
+          <div class="hint" style="margin-top:8px">Red de seguridad: si el cambio te deja sin acceso a la Pi, ella sola vuelve al hotspot pasado ese tiempo. Si sí la alcanzas en la red nueva, pulsa «Quedarme en esta red» para cancelar el regreso.</div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn primary" id="pi-join">Conectar a esta red</button>
+            <button class="btn" id="pi-stay">Quedarme en esta red</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Acciones</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="pi-restart">Reiniciar el servicio</button>
+          <button class="btn" id="pi-update">Actualizar desde GitHub</button>
+          <button class="btn" id="pi-reboot">Reiniciar la Pi</button>
+          <button class="btn danger" id="pi-shutdown">Apagar la Pi</button>
+        </div>
+        <div class="hint" style="margin-top:10px">Apaga siempre desde aquí antes de cortar la corriente: un apagón sucio es lo que dejó el hotspot a medias la vez pasada.</div>
+        <h2 style="margin-top:16px">Registro del servicio</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn sm" id="pi-logs">Ver últimas 60 líneas</button>
+        </div>
+        <pre class="term" id="pi-log-out">—</pre>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Mapa sin internet</h2>
+      <div class="hint">Las teselas del mapa vienen de internet. Descarga la zona de trabajo <b>antes</b> de salir: sin esto, en el agua verás la cuadrícula sobre un fondo gris.</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px">
+        <button class="btn primary" id="tiles-dl">Descargar la zona del mapa</button>
+        <button class="btn" id="tiles-clear">Borrar teselas</button>
+        <span class="badge" id="tiles-badge">—</span>
+      </div>
+      <div class="bar" id="tiles-bar" style="display:none"><i></i></div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== AJUSTES ====== -->
+<section class="view" id="v-ajustes">
+  <div class="page">
+    <h1>Ajustes</h1>
+    <div class="sub">Se guardan en este navegador. Los valores por defecto viven en <span class="mono">config.js</span>.</div>
+    <div class="cols">
+      <div class="panel">
+        <h2>Enlace con los robots</h2>
+        <div class="field"><span>Transporte</span>
+          <select id="a-transport">
+            <option value="serial">USB · Heltec base (Web Serial)</option>
+            <option value="ws">Raspberry Pi · WebSocket (plan B / C)</option>
+            <option value="sim">Simulación</option>
+          </select></div>
+        <div class="field" style="margin-top:8px"><span>Dirección de la Raspberry</span><input id="a-pi" placeholder="https://10.42.0.1:8443"></div>
+        <div class="field" style="margin-top:8px"><span>Token de administración</span><input id="a-pi-token" type="password" placeholder="pi/kaax_token.txt"></div>
+        <div class="field" style="margin-top:8px"><span>Baudios (USB)</span><input id="a-baud" type="number"></div>
+        <div class="hint" style="margin-top:8px">De esta única dirección salen el WebSocket, la cámara, el GPS y la administración. Tiene que empezar con <span class="mono">https://</span>: esta GUI se sirve por https y el navegador bloquea <span class="mono">ws://</span> sin avisar. Corre <span class="mono">pi/setup_tls.sh</span> en la Pi e instala la CA en este equipo (README §12).</div>
+      </div>
+      <div class="panel">
+        <h2>Zona y medición</h2>
+        <label class="toggle"><input type="checkbox" id="a-geo"> Usar la ubicación del navegador al abrir</label>
+        <div class="cols" style="gap:8px;margin-top:8px">
+          <div class="field"><span>Latitud</span><input id="a-lat" type="number" step="0.000001"></div>
+          <div class="field"><span>Longitud</span><input id="a-lon" type="number" step="0.000001"></div>
+        </div>
+        <div class="field" style="margin-top:8px"><span>Ancho de recolección (m)</span><input id="a-swath" type="number" step="0.1"></div>
+        <div class="field" style="margin-top:8px"><span>Filtro de ruido GPS (m)</span><input id="a-noise" type="number" step="0.1"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Cámara y visión por computadora</h2>
+      <div class="cols">
+        <div class="field"><span>Umbral de confianza</span><input id="a-cvth" type="number" step="0.05" min="0.1" max="0.99"></div>
+      </div>
+      <div class="field" style="margin-top:8px"><span>Modelo de Teachable Machine (URL)</span><input id="a-model-url" placeholder="https://teachablemachine.withgoogle.com/models/XXXXXXXX/"></div>
+      <div class="hint" style="margin-top:8px">En Teachable Machine: <b>Export Model → Tensorflow.js → Upload my model</b>, copia el enlace compartible (termina en <span class="mono">/</span>) y pégalo aquí. El modelo se descarga en este navegador; enciende o apaga la visión desde la pestaña Cámara.</div>
+    </div>
+    <div class="panel">
+      <h2>Control Xbox</h2>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="badge" id="pad-badge">sin control</span><span class="hint">Empareja el control por Bluetooth con la computadora y pulsa cualquier botón para que el navegador lo detecte.</span></div>
+      <div class="hint" style="margin-top:8px">Stick izquierdo: dirección · Gatillo derecho: avanzar · Gatillo izquierdo: retroceder · A: redes · B: paro de emergencia · LB/RB: cambiar de robot</div>
+      <label class="toggle" style="margin-top:8px"><input type="checkbox" id="a-pad"> Usar el control cuando esté conectado</label>
+    </div>
+    <div class="panel">
+      <h2>IA · Ollama Cloud</h2>
+      <div class="cols">
+        <div class="field"><span>API key</span><input id="a-key" type="password" placeholder="pegar aquí"></div>
+        <div class="field"><span>Modelo</span><input id="a-model"></div>
+      </div>
+      <div class="hint" style="margin-top:8px">La clave nunca sale de este navegador ni se sube al repositorio. Si el navegador bloquea la petición (CORS), usa el proxy <span class="mono">/api/ai</span> del puente en la Pi.</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn primary" id="a-save">Guardar ajustes</button>
+      <button class="btn" id="a-wipe">Borrar todos los datos locales</button>
+    </div>
+  </div>
+</section>
+
+
+<!-- ====== CÁMARA ====== -->
+<section class="view" id="v-camara">
+  <div class="page">
+    <h1>Cámara y detección</h1>
+    <div class="sub">Video en vivo desde la Raspberry. El modelo de Teachable Machine corre en este navegador, no en la Pi.</div>
+    <div class="cols">
+      <div>
+        <div class="camwrap" id="camwrap">
+          <div class="off" id="cam-off">Cámara apagada. Enciéndela para ver el video de la Pi.</div>
+          <img id="cam" crossorigin="anonymous" style="display:none" alt="">
+          <div class="cvbar" id="cvbar" style="display:none">
+            <div style="font-weight:600">Detección</div>
+            <div id="cv-rows"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn primary" id="cam-toggle">Encender cámara</button>
+          <button class="btn" id="cv-toggle">Activar visión</button>
+          <button class="btn" id="cam-snap">Guardar foto</button>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <h2>Estado</h2>
+          <div class="robot"><div class="grid">
+            <span class="k">Cámara</span><span class="v" id="cam-state">apagada</span>
+            <span class="k">Modelo</span><span class="v" id="cv-model">sin configurar</span>
+            <span class="k">Detecciones</span><span class="v" id="cv-count">0</span>
+          </div></div>
+          <div class="hint" style="margin-top:10px">Cada detección por encima del umbral queda registrada en la sesión activa y aparece en Reportes.</div>
+        </div>
+        <div class="panel">
+          <h2>GPS de la Raspberry</h2>
+          <div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn sm" id="gps-check">Verificar GPS</button><span class="badge" id="gps-badge">sin verificar</span></div>
+          <div class="gpsdiag" id="gps-out">Pulsa "Verificar GPS" para leer directamente el puerto serie de la Pi y ver las tramas NMEA crudas.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== EQUIPO (admin) ====== -->
+<section class="view" id="v-equipo">
+  <div class="page">
+    <h1 id="team-title">Equipo</h1>
+    <div class="sub">Acepta técnicos, revisa quién opera la flota y renombra el equipo.</div>
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h2 style="margin:0">Solicitudes pendientes</h2><button class="btn sm" id="tm-refresh">Actualizar</button></div>
+      <div id="tm-pending"></div>
+    </div>
+    <div class="panel">
+      <h2>Miembros activos</h2>
+      <div id="tm-active"></div>
+    </div>
+    <div class="panel">
+      <h2>Nombre del equipo</h2>
+      <div style="display:flex;gap:8px"><input id="tm-name"><button class="btn" id="tm-rename">Guardar</button></div>
+      <div class="hint" style="margin-top:8px">Comparte este nombre con tus técnicos: es el que eligen al registrarse.</div>
+    </div>
+  </div>
+</section>
+
+</main>
+<div class="toast" id="toast"></div>
+<script src="pi.js"></script>
+<script src="auth.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
