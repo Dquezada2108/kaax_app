@@ -93,11 +93,18 @@ async function createProfile({ name, role, adminKey, teamName, requestedTeamId }
   if (role === "admin") {
     doc.adminKeyHash = await sha256((adminKey || "").trim());
     doc.status = "activo";
+    // Reservamos el id del equipo ANTES de escribir nada. Antes se creaba el
+    // perfil sin teamId, luego el equipo, y al final un updateDoc para
+    // enlazarlos; ese update lo rechazaban las reglas, porque comparaban
+    // teamId contra un campo que todavía no existía en el documento. El
+    // perfil quedaba creado a medias y todo reintento fallaba después.
+    const teamRef = fb.d.doc(fb.d.collection(fb.db, "teams"));
+    doc.teamId = teamRef.id;
+    doc.requestedTeamId = "";
     await fb.d.setDoc(uref(user.uid), doc);
-    const t = await fb.d.addDoc(fb.d.collection(fb.db, "teams"), { name: teamName || ("Equipo de " + doc.name), ownerUid: user.uid, createdAt: Date.now() });
-    await fb.d.updateDoc(uref(user.uid), { teamId: t.id });
+    await fb.d.setDoc(teamRef, { name: teamName || ("Equipo de " + doc.name), ownerUid: user.uid, createdAt: Date.now() });
   } else {
-    doc.status = "pendiente"; doc.requestedTeamId = requestedTeamId || "";
+    doc.status = "pendiente"; doc.teamId = ""; doc.requestedTeamId = requestedTeamId || "";
     await fb.d.setDoc(uref(user.uid), doc);
   }
   profile = await loadProfile(user.uid); emit();

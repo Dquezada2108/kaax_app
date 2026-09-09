@@ -16,7 +16,7 @@ service cloud.firestore {
       // Cada quien lee su perfil; un admin lee los de su equipo y las solicitudes que le llegan.
       allow read: if signedIn() && (
         request.auth.uid == uid ||
-        (isAdmin() && (resource.data.teamId == me().teamId || resource.data.requestedTeamId == me().teamId))
+        (isAdmin() && (resource.data.get('teamId','') == me().get('teamId','__none__') || resource.data.get('requestedTeamId','') == me().get('teamId','__none__')))
       );
 
       // Alta: técnico libre; admin solo si la clave secreta existe en adminKeys.
@@ -31,10 +31,10 @@ service cloud.firestore {
       allow update: if signedIn() && (
         (request.auth.uid == uid
           && request.resource.data.role == resource.data.role
-          && request.resource.data.teamId == resource.data.teamId
+          && request.resource.data.get('teamId','') == resource.data.get('teamId','')
           && (request.resource.data.status == resource.data.status || request.resource.data.status == 'pendiente'))
         ||
-        (isAdmin() && (resource.data.requestedTeamId == me().teamId || resource.data.teamId == me().teamId))
+        (isAdmin() && (resource.data.get('requestedTeamId','') == me().get('teamId','__none__') || resource.data.get('teamId','') == me().get('teamId','__none__')))
       );
 
       allow delete: if false;
@@ -50,7 +50,7 @@ service cloud.firestore {
 
       // Sesiones compartidas: solo miembros activos del equipo.
       match /sessions/{sid} {
-        allow read, write: if signedIn() && me().teamId == tid && me().status == 'activo';
+        allow read, write: if signedIn() && me().get('teamId','') == tid && me().status == 'activo';
       }
     }
   }
