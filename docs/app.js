@@ -369,7 +369,17 @@ function sha256js(str) {
   return H.map(v => v.toString(16).padStart(8, "0")).join("");
 }
 const sha256 = async (t) => crypto?.subtle ? [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)))].map(b => b.toString(16).padStart(2, "0")).join("") : sha256js(t);
-window.KAAX = { hash: (u, p) => sha256(`${u.trim().toLowerCase()}:${p}`).then(h => (console.log(h), h)) };
+window.KAAX = {
+  hash: (u, p) => sha256(`${u.trim().toLowerCase()}:${p}`).then(h => (console.log(h), h)),
+  /** Hash de la clave de administrador, para comparar con el ID del documento
+   *  en Firestore → adminKeys. La clave nunca sale de este navegador. */
+  adminHash: (clave) => sha256(String(clave).trim()).then(h => {
+    console.log("%cID que debe tener el documento en adminKeys:", "font-weight:bold");
+    console.log(h);
+    console.log("Largo:", h.length, "(deben ser 64 caracteres hex en minúsculas)");
+    return h;
+  }),
+};
 
 const Auth = {
   user: null, pending: null, poll: null,
@@ -392,7 +402,16 @@ const Auth = {
     $("#u-pass").onkeydown = (e) => { if (e.key === "Enter") $("#u-go").click(); };
     $("#pick-tec").onclick = async () => { this.step("team"); const ts = await KaaxAuth.listTeams(); $("#t-team").innerHTML = ts.length ? ts.map(t => `<option value="${t.id}">${t.name}</option>`).join("") : `<option value="">— aún no hay equipos —</option>`; };
     $("#pick-adm").onclick = () => this.step("adm");
-    $("#a-go").onclick = async () => { const k = $("#a-secret").value.trim(); if (!k) return this.msg("a-err", "Falta la clave secreta."); try { this.msg("a-err", "Creando equipo…"); await KaaxAuth.createProfile({ name: this.pendingName(), role: "admin", adminKey: k, teamName: $("#a-team").value.trim() }); } catch (e) { this.msg("a-err", "Clave incorrecta o sin permisos."); } };
+    $("#a-go").onclick = async () => { const k = $("#a-secret").value.trim(); if (!k) return this.msg("a-err", "Falta la clave secreta."); try { this.msg("a-err", "Creando equipo…"); await KaaxAuth.createProfile({ name: this.pendingName(), role: "admin", adminKey: k, teamName: $("#a-team").value.trim() }); } catch (e) {
+      // No enmascarar el error: "clave incorrecta" para cualquier fallo hace
+      // imposible distinguir un hash que no coincide de un problema de reglas,
+      // de red o de dominios autorizados.
+      console.error("createProfile(admin) falló:", e);
+      const c = String(e?.code || e?.message || e);
+      this.msg("a-err", c.includes("permission-denied")
+        ? "La clave no coincide con ninguna en adminKeys. El ID del documento en Firestore debe ser el SHA-256 de la clave, en minúsculas."
+        : this.human(e));
+    } };
     $("#t-go").onclick = async () => { const t = $("#t-team").value; if (!t) return this.msg("t-err", "No hay equipos todavía. Pide a tu administrador que cree uno."); try { await KaaxAuth.createProfile({ name: this.pendingName(), role: "tecnico", requestedTeamId: t }); } catch (e) { this.msg("t-err", this.human(e)); } };
     $("#w-check").onclick = () => location.reload();
 
