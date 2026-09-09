@@ -6,12 +6,12 @@ window.KAAX_CONFIG = {
   // Pega aquí la config de tu proyecto (Firebase Console → Configuración → Tus apps → Web).
   // Si lo dejas como está, la app funciona en modo local con la lista `users` de abajo.
   firebase: {
-    apiKey: "PEGA_TU_API_KEY",
-    authDomain: "TU_PROYECTO.firebaseapp.com",
-    projectId: "TU_PROYECTO",
-    storageBucket: "TU_PROYECTO.appspot.com",
-    messagingSenderId: "000000000000",
-    appId: "1:000000000000:web:abcdef",
+    apiKey: "AIzaSyBICGYUg5bsXQY9a7pv_aATZgjRDLoH-5M",
+    authDomain: "kaax-cf8da.firebaseapp.com",
+    projectId: "kaax-cf8da",
+    storageBucket: "kaax-cf8da.firebasestorage.app",
+    messagingSenderId: "1048691926194",
+    appId: "1:1048691926194:web:ae425754bc24d65fdb95ab",
   },
 
   // ---- Raspberry Pi -----------------------------------------------------
