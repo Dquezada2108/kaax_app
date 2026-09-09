@@ -1,9 +1,11 @@
 /* KAAX service worker — hace que la app abra con cero internet.
  *
  * Tres cachés, tres políticas distintas:
- *   kaax-shell-v1  la app en sí (html/js/css/fuentes/leaflet). Precargada en la
- *                  instalación. Se sirve de caché primero: en el agua no hay red
- *                  y esperar un timeout de 30 s por cada archivo es inaceptable.
+ *   kaax-shell-v2  la app en sí (html/js/css/fuentes/leaflet). Precargada en la
+ *                  instalación y servida RED PRIMERO con tope de 3 s: con
+ *                  internet siempre corres la última versión, y sin internet
+ *                  el caché responde igual. Al revés (caché primero) cada
+ *                  despliegue tardaba dos recargas en surtir efecto.
  *   kaax-tiles-v1  teselas del mapa. Las llena el botón "Descargar zona" de la
  *                  GUI; aquí solo se leen. Nunca se borran solas.
  *   kaax-lib-v1    tfjs y Teachable Machine. Pesados y opcionales: se guardan la
@@ -12,7 +14,7 @@
  * Nada de esto toca a la Raspberry: la Pi se habla por wss:// y https:// en vivo,
  * y esas peticiones pasan de largo (ver el bypass en fetch).
  */
-const SHELL = "kaax-shell-v1";
+const SHELL = "kaax-shell-v2";
 const TILES = "kaax-tiles-v1";
 const LIB   = "kaax-lib-v1";
 
@@ -89,19 +91,34 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // La app: caché primero y refresco en segundo plano, así abre instantánea y
-  // se actualiza sola la próxima vez que haya internet.
+  // La app: RED primero con tope de 3 s, y el caché como respaldo.
+  //
+  // Antes era al revés (caché primero, refresco en segundo plano) y eso hacía
+  // que cada despliegue tardara DOS recargas en surtir efecto: la página corría
+  // el JS viejo mientras el caché se actualizaba por detrás. Servir código
+  // viejo sin avisar es peor que tardar unas décimas en abrir, sobre todo
+  // cuando el código controla un robot.
+  //
+  // El caché sigue siendo lo que hace posible el modo campo: sin red, el fetch
+  // falla o vence el tope y se responde desde el caché igual que antes.
   if (url.origin === self.location.origin) {
     event.respondWith((async () => {
       const c = await caches.open(SHELL);
-      const hit = await c.match(req, { ignoreSearch: true });
-      const net = fetch(req).then(r => { if (r.ok) c.put(req, r.clone()); return r; }).catch(() => null);
-      if (hit) return hit;
-      const r = await net;
-      if (r) return r;
-      // Navegación sin caché y sin red: al menos devolver el index.
-      if (req.mode === "navigate") return (await c.match("index.html")) || Response.error();
-      return Response.error();
+      try {
+        const r = await Promise.race([
+          fetch(req),
+          new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 3000)),
+        ]);
+        if (r && r.ok) { c.put(req, r.clone()); return r; }
+        // Una respuesta de error del servidor no debe tirar lo que sí tenemos.
+        const hit = await c.match(req, { ignoreSearch: true });
+        return hit || r;
+      } catch {
+        const hit = await c.match(req, { ignoreSearch: true });
+        if (hit) return hit;
+        if (req.mode === "navigate") return (await c.match("index.html")) || Response.error();
+        return Response.error();
+      }
     })());
   }
 });
