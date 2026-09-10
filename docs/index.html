@@ -138,6 +138,62 @@
     overflow:auto;white-space:pre-wrap;word-break:break-all}
   .bar{height:6px;background:var(--line-2);border-radius:3px;overflow:hidden;margin-top:12px}
   .bar>i{display:block;height:100%;width:0;background:var(--teal-500);transition:width .2s}
+
+  /* ---- menú en dos grupos ---- */
+  .grp{font-size:.6rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);
+    padding:0 8px 0 10px;font-weight:600;user-select:none}
+  .grp-sep{width:1px;height:16px;background:var(--line);margin:0 4px;flex:none;align-self:center}
+  nav.tabs a{position:relative;transition:color .16s ease,background .16s ease}
+  nav.tabs a::after{content:"";position:absolute;left:12px;right:12px;bottom:3px;height:2px;
+    background:var(--teal-500);border-radius:2px;transform:scaleX(0);opacity:0;
+    transition:transform .22s cubic-bezier(.4,0,.2,1),opacity .18s ease}
+  nav.tabs a.active::after{transform:scaleX(1);opacity:1}
+
+  /* ---- rodillos ---- */
+  .rollers{border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;margin-top:10px;
+    background:linear-gradient(180deg,var(--bg-soft),#fff)}
+  .rl-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;
+    font-size:.82rem;font-weight:600;color:var(--ink-2)}
+  .rl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .rl-name{font-size:.7rem;color:var(--muted);display:flex;justify-content:space-between;
+    align-items:center;gap:6px;margin-bottom:5px}
+  .rl-key{font-family:var(--mono);font-size:.62rem;opacity:.75}
+  /* La barra crece desde el CENTRO: a la derecha o a la izquierda según el
+     sentido de giro, que es lo que el pulso significa en un servo de 360°. */
+  .rl-bar{position:relative;height:7px;background:var(--line-2);border-radius:4px;overflow:hidden}
+  .rl-bar>i{position:absolute;top:0;bottom:0;left:50%;width:1px;background:var(--line);z-index:1}
+  .rl-bar>b{position:absolute;top:0;bottom:0;left:50%;width:0;background:var(--teal-500);
+    border-radius:4px;transition:width .18s cubic-bezier(.4,0,.2,1),left .18s cubic-bezier(.4,0,.2,1)}
+  .rl-one.rev .rl-bar>b{background:var(--amber)}
+  .rl-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px}
+  .rl-us{font-family:var(--mono);font-size:.72rem;color:var(--ink-2);
+    font-variant-numeric:tabular-nums;transition:color .15s ease}
+  .rl-one.live .rl-us{color:var(--teal-700);font-weight:600}
+  .btn.xs{padding:1px 9px;font-size:.85rem;line-height:1.5;border-radius:6px}
+  .rl-hint{font-size:.68rem;color:var(--muted);margin-top:9px;line-height:1.45}
+  #rol-toggle.on{background:var(--teal-700);border-color:var(--teal-700);color:#fff}
+  /* Pulso mientras los rodillos giran: señal periférica de que algo se mueve. */
+  .rollers.spin{border-color:var(--teal-300)}
+  .rollers.spin .rl-hd>span:first-child::before{content:"";display:inline-block;width:6px;height:6px;
+    border-radius:50%;background:var(--teal-500);margin-right:7px;vertical-align:middle;
+    animation:rolpulse 1.1s ease-in-out infinite}
+  @keyframes rolpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.75)}}
+
+  /* ---- animaciones sutiles de toda la app ---- */
+  .view.show{animation:viewin .26s cubic-bezier(.4,0,.2,1)}
+  @keyframes viewin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  .robot{transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+  .robot:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+  .kpi{transition:border-color .18s ease,transform .18s ease}
+  .kpi:hover{border-color:var(--teal-300);transform:translateY(-1px)}
+  .btn{transition:background .14s ease,border-color .14s ease,transform .1s ease}
+  .btn:active{transform:scale(.97)}
+  .dpad button{transition:background .12s ease,transform .1s ease,border-color .12s ease}
+  .dpad button.on{transform:scale(.94)}
+  .bat>i{transition:width .3s cubic-bezier(.4,0,.2,1),background .3s ease}
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  }
   main{height:calc(100% - var(--topbar));position:relative}
   .view{height:100%}
   .view:not(.show){display:none!important}
@@ -326,13 +382,16 @@
     <span class="word">KAAX</span>
   </div>
   <nav class="tabs" id="tabs">
+    <span class="grp" aria-hidden="true">Control</span>
     <a href="#/flota">Flota</a>
     <a href="#/camara">Cámara</a>
     <a href="#/cuadricula">Cuadrícula</a>
     <a href="#/sesion">Sesión</a>
+    <span class="grp-sep" aria-hidden="true"></span>
+    <span class="grp" aria-hidden="true">Análisis</span>
     <a href="#/reportes">Reportes</a>
-    <a href="#/raspberry">Raspberry</a>
     <a href="#/equipo" id="tab-equipo" style="display:none">Equipo</a>
+    <a href="#/raspberry">Raspberry</a>
     <a href="#/ajustes">Ajustes</a>
   </nav>
   <div class="right">
@@ -375,8 +434,31 @@
       <label>Potencia <span class="num" id="thr-lbl">60 %</span></label>
       <input type="range" id="thr" min="20" max="100" value="60">
       <div class="row">
-        <label class="toggle"><input type="checkbox" id="net"> Redes abajo</label>
-        <select id="target" style="width:auto"></select>
+        <select id="target" style="width:100%"></select>
+      </div>
+
+      <div class="rollers">
+        <div class="rl-hd">
+          <span>Rodillos</span>
+          <button class="btn sm" id="rol-toggle">Encender</button>
+        </div>
+        <div class="rl-grid">
+          <div class="rl-one" data-rol="R">
+            <div class="rl-name">Derecho <span class="rl-key">▲ ▼</span></div>
+            <div class="rl-bar"><i></i><b></b></div>
+            <div class="rl-foot"><button class="btn xs" data-rol-step="R,-1">−</button>
+              <span class="rl-us" id="rol-us-R">1500 µs</span>
+              <button class="btn xs" data-rol-step="R,1">+</button></div>
+          </div>
+          <div class="rl-one" data-rol="L">
+            <div class="rl-name">Izquierdo <span class="rl-key">◀ ▶</span></div>
+            <div class="rl-bar"><i></i><b></b></div>
+            <div class="rl-foot"><button class="btn xs" data-rol-step="L,-1">−</button>
+              <span class="rl-us" id="rol-us-L">1500 µs</span>
+              <button class="btn xs" data-rol-step="L,1">+</button></div>
+          </div>
+        </div>
+        <div class="rl-hint">Servos de 360°: el pulso es velocidad y sentido, 1500 µs = quietos. En el control, la cruz ajusta cada rodillo.</div>
       </div>
       <div class="row">
         <button class="btn danger estop" id="estop">■ Paro de emergencia</button>
@@ -595,7 +677,7 @@
     <div class="panel">
       <h2>Control Xbox</h2>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="badge" id="pad-badge">sin control</span><span class="hint">Empareja el control por Bluetooth con la computadora y pulsa cualquier botón para que el navegador lo detecte.</span></div>
-      <div class="hint" style="margin-top:8px">Stick izquierdo: dirección · Gatillo derecho: avanzar · Gatillo izquierdo: retroceder · A: redes · B: paro de emergencia · LB/RB: cambiar de robot</div>
+      <div class="hint" style="margin-top:8px">Stick izquierdo: dirección · Gatillo derecho: avanzar · Gatillo izquierdo: retroceder · Cruz ▲▼: rodillo derecho · Cruz ◀▶: rodillo izquierdo · A: encender/parar rodillos · B: paro de emergencia · LB/RB: cambiar de robot</div>
       <label class="toggle" style="margin-top:8px"><input type="checkbox" id="a-pad"> Usar el control cuando esté conectado</label>
     </div>
     <div class="panel">

@@ -143,13 +143,29 @@ const tiles = () => L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.
 const mapFleet = L.map("map-fleet", { zoomControl: true }).setView([S.lat, S.lon], 17); tiles().addTo(mapFleet);
 const mapGrid = L.map("map-grid").setView([S.lat, S.lon], 17); tiles().addTo(mapGrid);
 const markers = {}, lines = {};
+// Los marcadores y las trazas se dibujan en LOS DOS mapas. Antes solo se
+// añadían a mapFleet, así que la cuadrícula marcaba celdas visitadas pero
+// nunca mostraba dónde estaba el robot: parecía que no usaba el GPS.
+const dot = (r) => L.divIcon({ className: "", html: `<div class="rl" style="background:${r.color}"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] });
+
 function updateMarkers() {
   for (const r of Object.values(fleet)) {
     if (!r.fix || !r.lat) continue;
     const ll = [r.lat, r.lon];
-    if (!markers[r.id]) { markers[r.id] = L.marker(ll, { icon: L.divIcon({ className: "", html: `<div class="rl" style="background:${r.color}"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] }) }).addTo(mapFleet).bindTooltip(r.name, { permanent: true, direction: "right", offset: [10, 0], className: "mono" }); lines[r.id] = L.polyline([], { color: r.color, weight: 3, opacity: .7 }).addTo(mapFleet); }
-    markers[r.id].setLatLng(ll);
-    lines[r.id].setLatLngs(r.track.map(p => [p.lat, p.lon]));
+    if (!markers[r.id]) {
+      markers[r.id] = {};
+      lines[r.id] = {};
+      for (const [k, map] of [["fleet", mapFleet], ["grid", mapGrid]]) {
+        markers[r.id][k] = L.marker(ll, { icon: dot(r) }).addTo(map)
+          .bindTooltip(r.name, { permanent: true, direction: "right", offset: [10, 0], className: "mono" });
+        lines[r.id][k] = L.polyline([], { color: r.color, weight: 3, opacity: .7 }).addTo(map);
+      }
+    }
+    const track = r.track.map(p => [p.lat, p.lon]);
+    for (const k of ["fleet", "grid"]) {
+      markers[r.id][k].setLatLng(ll);
+      lines[r.id][k].setLatLngs(track);
+    }
   }
 }
 function recenter(lat, lon) { S.lat = lat; S.lon = lon; mapFleet.setView([lat, lon]); mapGrid.setView([lat, lon]); $("#zone-lbl").textContent = `Zona: ${lat.toFixed(5)}, ${lon.toFixed(5)}`; }
@@ -211,13 +227,64 @@ $("#g-reset").onclick = () => Grid.reset();
 Grid.build();
 
 // ---------- control --------------------------------------------------------
+// ---------- rodillos (servos de rotación continua) ---------------------------------
+// Dos servos de 360° que empujan la basura hacia adentro. En estos servos el
+// ancho de pulso es velocidad y sentido, no ángulo: CFG.rollers.stop los deja
+// quietos y alejarse de ahí los hace girar hacia un lado o el otro.
+const Rollers = {
+  R: CFG.rollers.stop, L: CFG.rollers.stop, ka: null,
+  init() {
+    $("#rol-toggle").onclick = () => this.toggle();
+    $$("[data-rol-step]").forEach(b => {
+      const [w, d] = b.dataset.rolStep.split(",");
+      b.onclick = () => this.nudge(w, +d);
+    });
+    // Keepalive propio: el failsafe del robot para todo si no llega nada en
+    // 1.5 s, y recogiendo basura con el robot quieto no se manda ningún CMD.
+    this.ka = setInterval(() => { if (this.spinning()) this.send(); }, CFG.rollers.keepaliveMs);
+    this.render();
+  },
+  spinning() { return this.R !== CFG.rollers.stop || this.L !== CFG.rollers.stop; },
+  clamp(v) { return Math.max(CFG.rollers.min, Math.min(CFG.rollers.max, Math.round(v))); },
+  set(which, us) { this[which] = this.clamp(us); this.send(); this.render(); },
+  nudge(which, dir) { this.set(which, this[which] + dir * CFG.rollers.step); },
+  toggle() {
+    const run = CFG.rollers.run, stop = CFG.rollers.stop;
+    if (this.spinning()) { this.R = this.L = stop; }
+    else { this.R = this.L = run; }
+    this.send(); this.render();
+  },
+  /** Sincroniza la GUI tras un STOP, sin volver a mandar nada. */
+  reset() { this.R = this.L = CFG.rollers.stop; this.render(); },
+  send() { send(`ROL,${Control.target},${this.R},${this.L}`); },
+  render() {
+    const { stop, min, max } = CFG.rollers;
+    for (const w of ["R", "L"]) {
+      const v = this[w], el = $(`.rl-one[data-rol="${w}"]`);
+      if (!el) continue;
+      const bar = el.querySelector(".rl-bar > b");
+      const span = v >= stop ? (max - stop) : (stop - min);
+      const frac = Math.min(1, Math.abs(v - stop) / span);
+      // La barra sale del centro hacia el lado del giro.
+      bar.style.width = (frac * 50) + "%";
+      bar.style.left = v >= stop ? "50%" : (50 - frac * 50) + "%";
+      el.classList.toggle("rev", v < stop);
+      el.classList.toggle("live", v !== stop);
+      $("#rol-us-" + w).textContent = v + " µs";
+    }
+    const on = this.spinning();
+    $("#rol-toggle").textContent = on ? "Parar" : "Encender";
+    $("#rol-toggle").classList.toggle("on", on);
+    $(".rollers").classList.toggle("spin", on);
+  },
+};
+
 const Control = {
   target: CFG.robots[0].id, keys: {}, thr: .6, last: "", ka: null,
   init() {
     const sel = $("#target"); sel.innerHTML = `<option value="00">Todos</option>` + CFG.robots.map(r => `<option value="${r.id}">${r.name}</option>`).join(""); sel.value = this.target;
     sel.onchange = () => { this.target = sel.value; renderRobots(); };
     $("#thr").oninput = (e) => { this.thr = e.target.value / 100; $("#thr-lbl").textContent = e.target.value + " %"; this.calc(); };
-    $("#net").onchange = (e) => send(`NET,${this.target},${e.target.checked ? 1 : 0}`);
     $("#estop").onclick = () => this.estop();
     const map = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", w: "up", s: "down", a: "left", d: "right" };
     document.addEventListener("keydown", e => { if (e.target.matches("input,textarea,select")) return; if (e.key === " ") { e.preventDefault(); this.estop(); return; } const k = map[e.key.length === 1 ? e.key.toLowerCase() : e.key]; if (!k) return; e.preventDefault(); if (this.keys[k]) return; this.keys[k] = true; this.calc(); });
@@ -237,9 +304,15 @@ const Control = {
     const cmd = `CMD,${this.target},${Math.round(R)},${Math.round(L)}`;
     if (cmd !== this.last) { this.last = cmd; send(cmd); }
   },
-  estop() { this.keys = {}; this.last = ""; $$(".dpad button").forEach(b => b.classList.remove("on")); send(`STOP,00`); toast("Paro de emergencia enviado a toda la flota"); },
+  estop() {
+    this.keys = {}; this.last = ""; $$(".dpad button").forEach(b => b.classList.remove("on"));
+    send(`STOP,00`);
+    // STOP ya para los rodillos en el robot; esto sincroniza lo que ves.
+    Rollers.reset();
+    toast("Paro de emergencia enviado a toda la flota");
+  },
 };
-Control.init();
+Control.init(); Rollers.init();
 
 // ---------- session ----------------------------------------------------------
 const Session = {
@@ -582,6 +655,27 @@ const Pad = {
     window.addEventListener("gamepadconnected", (e) => { this.idx = e.gamepad.index; $("#pad-badge").className = "badge ok"; $("#pad-badge").textContent = "control conectado"; toast("Control detectado: " + e.gamepad.id.slice(0, 28)); this.loop(); });
     window.addEventListener("gamepaddisconnected", () => { this.idx = null; $("#pad-badge").className = "badge"; $("#pad-badge").textContent = "sin control"; });
   },
+  /** Cruz del control: ▲▼ ajustan el rodillo derecho y ◀▶ el izquierdo.
+   *  Un toque mueve un escalón; mantener pulsado repite, con una pausa inicial
+   *  para no dispararse a 60 pasos por segundo. */
+  dpad(g) {
+    // Mapeo estándar: 12 arriba, 13 abajo, 14 izquierda, 15 derecha.
+    if (g.buttons.length < 16) {
+      if (!this._warned) { this._warned = true; log("Este control no expone la cruz en el mapeo estándar; usa los botones +/− de la pantalla.", "err"); }
+      return;
+    }
+    const MAP = { 12: ["R", 1], 13: ["R", -1], 14: ["L", -1], 15: ["L", 1] };
+    const now = performance.now();
+    this.rep = this.rep || {};
+    for (const idx of Object.keys(MAP)) {
+      const [which, dir] = MAP[idx];
+      const st = this.rep[idx] || (this.rep[idx] = { held: false, next: 0 });
+      if (g.buttons[idx]?.pressed) {
+        if (!st.held) { st.held = true; st.next = now + 320; Rollers.nudge(which, dir); }
+        else if (now >= st.next) { st.next = now + 90; Rollers.nudge(which, dir); }
+      } else { st.held = false; }
+    }
+  },
   loop() {
     cancelAnimationFrame(this.raf);
     const step = () => {
@@ -597,7 +691,8 @@ const Pad = {
       const cmd = `CMD,${Control.target},${R},${L}`;
       if (cmd !== Control.last) { Control.last = cmd; send(cmd); }
       const press = (i) => { const d = g.buttons[i]?.pressed && !this.prev[i]; this.prev[i] = g.buttons[i]?.pressed; return d; };
-      if (press(0)) { const c = $("#net"); c.checked = !c.checked; send(`NET,${Control.target},${c.checked ? 1 : 0}`); }
+      if (press(0)) Rollers.toggle();
+      this.dpad(g);
       if (press(1)) Control.estop();
       const next = press(5), prev = press(4);
       if (next || prev) { const ids = ["00", ...CFG.robots.map(r => r.id)]; const i = ids.indexOf(Control.target); Control.setTarget(ids[(i + (next ? 1 : ids.length - 1)) % ids.length]); }

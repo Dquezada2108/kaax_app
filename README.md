@@ -24,13 +24,15 @@ Un solo protocolo de líneas de texto en los tres planes, así la GUI no cambia:
 | Dirección | Mensaje | Significado |
 |---|---|---|
 | GUI → robot | `CMD,01,1700,1300` | µs motor derecho, izquierdo (1500 = paro) |
-| GUI → robot | `NET,01,1` / `NET,01,0` | redes abajo / arriba |
+| GUI → robot | `ROL,01,1700,1300` | µs de los dos rodillos (1500 = quietos) |
 | GUI → robot | `STOP,00` | paro de emergencia (00 = todos) |
 | robot → GUI | `KAAX,01,lat,lon,b1,b2,fix,km/h,rumbo,rssi` | telemetría cada 1 s |
 
 `b1`/`b2` son los voltajes de las dos baterías. **El robot con Raspberry los manda vacíos** (`KAAX,01,19.68,-99.02,,,1,0.00,0`) porque no lleva ADS1115 ni los divisores resistivos, y la GUI oculta esos campos en vez de mostrar 0.00 V. Los Heltec sí los mandan. Si algún día cableas el ADC, pon `battery.enabled: true` en `config.js`.
 
-Failsafe: si un robot no recibe `CMD` en 1.5 s, se detiene solo. La GUI reenvía el último comando cada 0.5 s mientras haya movimiento.
+**Los rodillos son servos de rotación continua (360°).** En ellos el ancho de pulso no es un ángulo sino **velocidad y sentido**: 1500 µs = quietos, por encima giran hacia un lado y por debajo hacia el otro, más rápido cuanto más te alejas del centro. Las redes ya no llevan servo, son fijas; `NET` se sigue aceptando pero se ignora.
+
+Failsafe: si un robot no recibe `CMD` **ni `ROL`** en 1.5 s, se detiene solo — motores **y rodillos**. Un rodillo girando no se para por sí mismo, así que perder el enlace con ellos encendidos es justo el caso que esto cubre. Por eso la GUI reenvía el último `ROL` cada 0.5 s mientras alguno gire, aunque el robot esté quieto recogiendo. La GUI reenvía el último comando cada 0.5 s mientras haya movimiento.
 
 ---
 
@@ -119,8 +121,8 @@ La Pi va a bordo, hace su propio hotspot WiFi y controla todo. Alcance ≈ 50–
 |---|---|---|
 | ESC derecho | GPIO18 | 12 |
 | ESC izquierdo | GPIO19 | 35 |
-| Servo red derecha | GPIO12 | 32 |
-| Servo red izquierda | GPIO13 | 33 |
+| Rodillo derecho (servo 360°) | GPIO12 | 32 |
+| Rodillo izquierdo (servo 360°) | GPIO13 | 33 |
 | GPS TX → Pi RX | GPIO15 (RXD) | 10 |
 | GPS RX ← Pi TX | GPIO14 (TXD) | 8 |
 | Tierra común | GND | 6 (o 9, 14, 20, 25, 30, 34, 39) |
@@ -128,6 +130,8 @@ La Pi va a bordo, hace su propio hotspot WiFi y controla todo. Alcance ≈ 50–
 El GPS **cruza**: TX del GPS al RX de la Pi. Si no llegan tramas NMEA, casi siempre es que están sin cruzar. El GPS va a 3.3 V (pin 1 o 17), nunca a 5 V en las líneas de datos. Los ESC y servos comparten tierra con la Pi pero se alimentan de su BEC/UBEC, **nunca** del riel de 5 V de la Pi.
 
 No hay medición de baterías: sin ADS1115 ni divisores, la GUI simplemente no muestra ese dato.
+
+Los dos servos de GPIO12 y 13 ya no mueven redes: accionan los **rodillos** que empujan la basura hacia adentro. Son de rotación continua, así que se controlan por velocidad desde la pestaña Flota o con la cruz del control Xbox.
 
 ### 3.2 Instalación (un solo comando)
 
@@ -291,7 +295,9 @@ Desde la terminal de la Pi también sirve: `cat /dev/serial0` (deben salir líne
 | Stick izquierdo | girar |
 | Gatillo derecho (RT) | avanzar, proporcional |
 | Gatillo izquierdo (LT) | retroceder |
-| A | subir/bajar redes |
+| Cruz ▲ ▼ | rodillo derecho: más o menos velocidad |
+| Cruz ◀ ▶ | rodillo izquierdo: más o menos velocidad |
+| A | encender o parar los dos rodillos |
 | B | paro de emergencia |
 | LB / RB | cambiar de robot |
 

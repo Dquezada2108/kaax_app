@@ -65,6 +65,13 @@ window.KAAX_CONFIG = {
   // Motor mapping (µs)
   motor: { neutral: 1500, span: 400, keepaliveMs: 500 },
 
+  // Rodillos: dos servos de rotación continua (360°) que empujan la basura
+  // hacia adentro. En estos servos el pulso NO es un ángulo sino velocidad y
+  // sentido: `stop` es quietos, y alejarse de ahí los hace girar más rápido
+  // hacia un lado o el otro. `run` es la velocidad al pulsar "Encender" y
+  // `step` cuánto cambia cada toque de la cruz del control.
+  rollers: { stop: 1500, run: 1700, min: 1000, max: 2000, step: 25, keepaliveMs: 500 },
+
   // Enlace serie con la estación base Heltec (plan A)
   serial: { baud: 115200 },
 

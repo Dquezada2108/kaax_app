@@ -9,7 +9,7 @@
  *
  * Line protocol (every message ends with '\n'):
  *   From laptop  : CMD,<id>,<R_us>,<L_us>     motors (1100–1900, 1500 = stop)
- *                  NET,<id>,<0|1>             nets up/down
+ *                  ROL,<id>,<us R>,<us L>     rodillos (servos de 360 grados)
  *                  STOP,<id>                  emergency stop
  *                  PING,<id>                  ask robot to answer
  *                  (id = 01..03, or 00 = all robots)

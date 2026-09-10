@@ -5,7 +5,7 @@ KAAX — Plan C: la Raspberry Pi 5 a bordo hace todo. Sin Heltec.
   Laptop/teléfono --WiFi (hotspot de la Pi)--> este script --> ESCs, servos, GPS
 
 Mismo protocolo de líneas que la versión LoRa, así la GUI no cambia:
-  entra : CMD,<id>,R,L · NET,<id>,0|1 · STOP,<id> · PING,<id>
+  entra : CMD,<id>,R,L · ROL,<id>,rodR,rodL · STOP,<id> · PING,<id>
   sale  : KAAX,<id>,lat,lon,b1,b2,fix,spd_kmh,hdg
           b1/b2 van vacíos: este robot no mide baterías (no hay ADS1115 ni
           divisores). La GUI oculta esos campos cuando llegan vacíos.
@@ -18,7 +18,7 @@ POR QUÉ TLS (el punto entero de esta versión)
 
 CABLEADO (numeración BCM, Pi 5)
   GPIO18  ESC derecho    GPIO19  ESC izquierdo
-  GPIO12  Servo red R    GPIO13  Servo red L
+  GPIO12  Rodillo der.   GPIO13  Rodillo izq.   (servos de 360°)
   GPIO14/15 (UART0, /dev/serial0)  GPS TX->GPIO15(pin 10), GPS RX<-GPIO14(pin 8)
   Tierra común en todo. Pi alimentada por UBEC 5 V, nunca del BEC del ESC.
 
@@ -34,9 +34,12 @@ DOCS = os.path.join(HERE, "..", "docs")
 CERT_DIR = os.path.join(HERE, "certs")
 TOKEN_FILE = os.path.join(HERE, "kaax_token.txt")
 
-PIN_ESC_R, PIN_ESC_L, PIN_SRV_R, PIN_SRV_L = 18, 19, 12, 13
+PIN_ESC_R, PIN_ESC_L, PIN_ROL_R, PIN_ROL_L = 18, 19, 12, 13
 NEUTRAL, MIN_US, MAX_US = 1500, 1100, 1900
-NET_UP, NET_DOWN = 1100, 1900          # ancho de pulso de los servos (µs)
+# Los rodillos son servos de rotación continua (360°): el ancho de pulso NO es
+# un ángulo, es velocidad y sentido. 1500 µs = quietos; por encima giran hacia
+# un lado y por debajo hacia el otro, más rápido cuanto más se alejan de 1500.
+ROL_STOP, ROL_MIN, ROL_MAX = 1500, 1000, 2000
 FAILSAFE_S, TELEMETRY_S = 1.5, 1.0
 HOTSPOT_NAME = os.environ.get("KAAX_HOTSPOT", "Kaax-Hotspot")
 SERVICE_NAME = os.environ.get("KAAX_SERVICE", "kaax")
@@ -54,7 +57,7 @@ def _init_gpio():
     for chip in (4, 0):
         try:
             h = lgpio.gpiochip_open(chip)
-            for p in (PIN_ESC_R, PIN_ESC_L, PIN_SRV_R, PIN_SRV_L):
+            for p in (PIN_ESC_R, PIN_ESC_L, PIN_ROL_R, PIN_ROL_L):
                 lgpio.gpio_claim_output(h, p)
             print(f"GPIO listo en gpiochip{chip}")
             return lambda pin, us: lgpio.tx_servo(h, pin, int(max(500, min(2500, us))), 50)
@@ -120,14 +123,25 @@ def open_camera():
     return None
 
 # ---- estado del robot ------------------------------------------------------
-state = dict(R=NEUTRAL, L=NEUTRAL, net=0, last_cmd=0.0,
+state = dict(R=NEUTRAL, L=NEUTRAL, rolR=ROL_STOP, rolL=ROL_STOP, last_cmd=0.0,
              lat=0.0, lon=0.0, fix=0, spd=0.0, hdg=0.0)
 clients = set()
 
 def apply():
     pulse(PIN_ESC_R, state["R"]); pulse(PIN_ESC_L, state["L"])
-    pulse(PIN_SRV_R, NET_DOWN if state["net"] else NET_UP)
-    pulse(PIN_SRV_L, NET_UP if state["net"] else NET_DOWN)
+    pulse(PIN_ROL_R, state["rolR"]); pulse(PIN_ROL_L, state["rolL"])
+
+def moving():
+    """¿Hay algo girando? Incluye los rodillos: un servo de rotación continua
+    sigue girando indefinidamente, así que perder el enlace con los rodillos
+    encendidos es justo el caso que el failsafe tiene que cubrir."""
+    return (state["R"] != NEUTRAL or state["L"] != NEUTRAL
+            or state["rolR"] != ROL_STOP or state["rolL"] != ROL_STOP)
+
+def all_stop():
+    state["R"] = state["L"] = NEUTRAL
+    state["rolR"] = state["rolL"] = ROL_STOP
+    apply()
 
 def handle(line, rid):
     p = line.split(",")
@@ -140,12 +154,20 @@ def handle(line, rid):
         except ValueError:
             return
         state["last_cmd"] = time.time(); apply()
+    elif p[0] == "ROL" and len(p) >= 4:
+        # ROL,<id>,<µs rodillo derecho>,<µs rodillo izquierdo>
+        try:
+            state["rolR"] = max(ROL_MIN, min(ROL_MAX, int(p[2])))
+            state["rolL"] = max(ROL_MIN, min(ROL_MAX, int(p[3])))
+        except ValueError:
+            return
+        # Cuenta como señal de vida: si no, el failsafe pararía los rodillos
+        # mientras el robot está quieto recogiendo basura.
+        state["last_cmd"] = time.time(); apply()
     elif p[0] == "STOP":
-        state["R"] = state["L"] = NEUTRAL; apply()
-    elif p[0] == "NET" and len(p) >= 3:
-        try: state["net"] = int(p[2])
-        except ValueError: return
-        apply()
+        all_stop()
+    elif p[0] == "NET":
+        return          # las redes ahora son fijas; se ignora por compatibilidad
 
 def poll_gps():
     global gps_bytes, gps_sats
@@ -179,8 +201,8 @@ async def telemetry(app):
     while True:
         await asyncio.sleep(TELEMETRY_S)
         poll_gps()
-        if (state["R"] != NEUTRAL or state["L"] != NEUTRAL) and time.time() - state["last_cmd"] > FAILSAFE_S:
-            state["R"] = state["L"] = NEUTRAL; apply(); print("failsafe: alto")
+        if moving() and time.time() - state["last_cmd"] > FAILSAFE_S:
+            all_stop(); print("failsafe: alto (motores y rodillos)")
         # b1/b2 vacíos a propósito: este robot no tiene medición de batería.
         msg = (f"KAAX,{rid},{state['lat']:.6f},{state['lon']:.6f},,,"
                f"{state['fix']},{state['spd']:.2f},{state['hdg']:.0f}")
@@ -366,6 +388,9 @@ async def system_status(request):
         "version": gitrev.strip() if ok_git else "",
         "clients": len(clients),
         "gps": {"port": gps_port, "fix": state["fix"], "satellites": gps_sats, "bytes": gps_bytes},
+        "motors": {"R": state["R"], "L": state["L"]},
+        "rollers": {"R": state["rolR"], "L": state["rolL"], "spinning":
+                    state["rolR"] != ROL_STOP or state["rolL"] != ROL_STOP},
     })
 
 async def system_logs(request):
@@ -548,7 +573,7 @@ def main():
     try:
         asyncio.run(run_servers(a.id, a.http, a.https))
     except KeyboardInterrupt:
-        state["R"] = state["L"] = NEUTRAL; apply()
+        all_stop()
         print("\nAlto y salida.")
 
 if __name__ == "__main__":
