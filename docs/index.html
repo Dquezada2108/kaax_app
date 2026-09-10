@@ -27,6 +27,10 @@
     --topbar:58px;
   }
   *{margin:0;padding:0;box-sizing:border-box}
+  /* La regla [hidden]{display:none} del navegador tiene especificidad casi nula:
+     cualquier `.clase a{display:block}` la pisa y el elemento reaparece. Pasó
+     con "Equipo" en el submenú, visible para quien no es administrador. */
+  [hidden]{display:none!important}
   html,body{height:100%}
   body{font-family:var(--ff);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.45;font-size:15px;overflow:hidden}
   a{color:var(--teal-700);text-decoration:none}
@@ -139,10 +143,30 @@
   .bar{height:6px;background:var(--line-2);border-radius:3px;overflow:hidden;margin-top:12px}
   .bar>i{display:block;height:100%;width:0;background:var(--teal-500);transition:width .2s}
 
-  /* ---- menú en dos grupos ---- */
-  .grp{font-size:.6rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);
-    padding:0 8px 0 10px;font-weight:600;user-select:none}
-  .grp-sep{width:1px;height:16px;background:var(--line);margin:0 4px;flex:none;align-self:center}
+  /* ---- submenú de la barra ---- */
+  .menu{position:relative;display:flex;align-items:center}
+  .menu-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;
+    font-size:.88rem;font-weight:500;color:var(--ink-2);background:none;border:none;
+    font-family:inherit;transition:color .16s ease,background .16s ease}
+  .menu-btn:hover{background:#fff;color:var(--teal-700)}
+  .menu-btn .caret{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;
+    border-top:5px solid currentColor;opacity:.55;transition:transform .2s cubic-bezier(.4,0,.2,1)}
+  .menu-btn[aria-expanded="true"]{background:#fff;color:var(--teal-700)}
+  .menu-btn[aria-expanded="true"] .caret{transform:rotate(180deg)}
+  /* Cuando la vista abierta vive dentro del submenú, el botón se marca igual
+     que una pestaña activa: si no, no sabrías dónde estás parado. */
+  .menu-btn.active{background:#fff;color:var(--teal-700);box-shadow:var(--shadow)}
+  .menu-pop{position:absolute;top:calc(100% + 9px);right:0;min-width:262px;z-index:1400;
+    background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);
+    padding:5px;transform-origin:top right;animation:popin .16s cubic-bezier(.4,0,.2,1)}
+  @keyframes popin{from{opacity:0;transform:translateY(-5px) scale(.97)}to{opacity:1;transform:none}}
+  .menu-pop a{display:block;padding:8px 11px;border-radius:7px;text-decoration:none;
+    transition:background .13s ease}
+  .menu-pop a:hover,.menu-pop a:focus-visible{background:var(--bg-soft);outline:none}
+  .menu-pop a.active{background:var(--teal-50)}
+  .menu-pop b{display:block;font-size:.86rem;font-weight:600;color:var(--ink)}
+  .menu-pop span{display:block;font-size:.71rem;color:var(--muted);margin-top:1px;line-height:1.35}
+  .pill.user span{max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   nav.tabs a{position:relative;transition:color .16s ease,background .16s ease}
   nav.tabs a::after{content:"";position:absolute;left:12px;right:12px;bottom:3px;height:2px;
     background:var(--teal-500);border-radius:2px;transform:scaleX(0);opacity:0;
@@ -382,21 +406,27 @@
     <span class="word">KAAX</span>
   </div>
   <nav class="tabs" id="tabs">
-    <span class="grp" aria-hidden="true">Control</span>
+    <!-- Las de control se quedan a la vista: son las que se usan con el robot
+         en el agua, y esconderlas costaría un clic extra cada vez. -->
     <a href="#/flota">Flota</a>
     <a href="#/camara">Cámara</a>
     <a href="#/cuadricula">Cuadrícula</a>
     <a href="#/sesion">Sesión</a>
-    <span class="grp-sep" aria-hidden="true"></span>
-    <span class="grp" aria-hidden="true">Análisis</span>
-    <a href="#/reportes">Reportes</a>
-    <a href="#/equipo" id="tab-equipo" style="display:none">Equipo</a>
-    <a href="#/raspberry">Raspberry</a>
-    <a href="#/ajustes">Ajustes</a>
+    <div class="menu" id="menu-analisis">
+      <button class="menu-btn" id="analisis-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="analisis-pop">
+        Análisis<span class="caret" aria-hidden="true"></span>
+      </button>
+      <div class="menu-pop" id="analisis-pop" role="menu" hidden>
+        <a href="#/reportes" role="menuitem"><b>Reportes</b><span>Indicadores, gráfica y exportación</span></a>
+        <a href="#/equipo" id="tab-equipo" role="menuitem" hidden><b>Equipo</b><span>Aceptar y administrar técnicos</span></a>
+        <a href="#/raspberry" role="menuitem"><b>Raspberry</b><span>Estado, red, registro y mapa sin internet</span></a>
+        <a href="#/ajustes" role="menuitem"><b>Ajustes</b><span>Enlace, zona, cámara, control e IA</span></a>
+      </div>
+    </div>
   </nav>
   <div class="right">
     <button class="btn field-btn" id="btn-offline" title="Trabajar sin internet">Modo campo</button>
-    <div class="pill" id="user-pill" title="Cerrar sesión" style="cursor:pointer"><span id="user-lbl"></span></div>
+    <div class="pill user" id="user-pill" title="Cerrar sesión" style="cursor:pointer"><span id="user-lbl"></span></div>
     <div class="pill"><span class="dot" id="conn-dot"></span><span id="conn-lbl">sin enlace</span></div>
     <button class="btn primary" id="btn-connect">Conectar</button>
   </div>

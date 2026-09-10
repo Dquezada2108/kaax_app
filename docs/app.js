@@ -507,7 +507,9 @@ const Auth = {
     this.user = u; clearInterval(this.poll);
     $("#user-lbl").textContent = u.name + (u.role === "admin" ? " · admin" : "");
     if (!$("#s-ops").value) $("#s-ops").value = u.name;
-    $("#tab-equipo").style.display = u.role === "admin" ? "" : "none";
+    // El elemento vive en el submenú y se oculta con el atributo `hidden`;
+    // tocar style.display no bastaría para volver a mostrarlo.
+    $("#tab-equipo").hidden = u.role !== "admin";
     $("#login").classList.remove("show");
     setTimeout(() => { mapFleet.invalidateSize(); mapGrid.invalidateSize(); }, 60);
     Team.init(); Reports.syncDown();
@@ -852,18 +854,56 @@ const PiPanel = {
   },
 };
 
+// ---------- submenú de la barra superior --------------------------------------------
+// Las vistas de análisis viven aquí para que la barra no cargue ocho pestañas.
+// Las de control siguen a la vista: son las que se tocan con el robot en el agua.
+const Menu = {
+  open: false,
+  init() {
+    this.btn = $("#analisis-btn"); this.pop = $("#analisis-pop");
+    if (!this.btn) return;
+    this.btn.onclick = (e) => { e.stopPropagation(); this.toggle(); };
+    // Clic fuera y Escape cierran; sin esto el panel se queda colgado.
+    document.addEventListener("click", (e) => { if (this.open && !$("#menu-analisis").contains(e.target)) this.set(false); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && this.open) { this.set(false); this.btn.focus(); return; }
+      if (!this.open || !["ArrowDown", "ArrowUp"].includes(e.key)) return;
+      e.preventDefault();
+      const items = this.items();
+      const i = items.indexOf(document.activeElement);
+      items[(i + (e.key === "ArrowDown" ? 1 : items.length - 1) + items.length) % items.length]?.focus();
+    });
+    this.pop.addEventListener("click", () => this.set(false));   // navegar cierra
+  },
+  items() { return [...this.pop.querySelectorAll("a")].filter(a => !a.hidden); },
+  toggle() { this.set(!this.open); },
+  set(v) {
+    this.open = v;
+    this.pop.hidden = !v;
+    this.btn.setAttribute("aria-expanded", v ? "true" : "false");
+    if (v) this.items()[0]?.focus();
+  },
+  /** Marca el botón cuando la vista abierta es una de las suyas. */
+  sync(view) {
+    const inside = this.items().some(a => a.getAttribute("href") === "#/" + view);
+    this.btn.classList.toggle("active", inside);
+    this.items().forEach(a => a.classList.toggle("active", a.getAttribute("href") === "#/" + view));
+  },
+};
+
 // ---------- router -----------------------------------------------------------------
 function route() {
   const h = (location.hash || "#/flota").replace("#/", "");
   const ok = ["flota", "camara", "cuadricula", "sesion", "reportes", "raspberry", "equipo", "ajustes"].includes(h) ? h : "flota";
   $$(".view").forEach(v => v.classList.toggle("show", v.id === "v-" + ok));
-  $$("#tabs a").forEach(a => a.classList.toggle("active", a.getAttribute("href") === "#/" + ok));
+  $$("#tabs > a").forEach(a => a.classList.toggle("active", a.getAttribute("href") === "#/" + ok));
+  Menu.sync(ok);
   setTimeout(() => { mapFleet.invalidateSize(); mapGrid.invalidateSize(); }, 60);
   if (ok === "reportes") Reports.render();
   if (ok === "equipo") Team.load?.();
   if (ok === "raspberry") PiPanel.load();
 }
-Vision.init(); Pad.init(); Auth.init(); Field.init(); PiPanel.init();
+Vision.init(); Pad.init(); Auth.init(); Field.init(); PiPanel.init(); Menu.init();
 window.addEventListener("hashchange", route); route();
 log("Kaax listo. Elige transporte en Ajustes y pulsa Conectar.", "sys");
 })();
