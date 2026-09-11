@@ -1,0 +1,682 @@
+[
+ {
+  "id": 1786719600000,
+  "start": 1786719600000,
+  "end": 1786722720000,
+  "site": "Laguna de Ojo de Agua - orilla norte",
+  "ops": "Yael García",
+  "user": "Diego Quezada",
+  "notes": "DEMO — Sargazo acumulado contra la orilla por el viento del norte.",
+  "robots": {
+   "01": {
+    "name": "Kaax 1",
+    "dist": 1090.6,
+    "spdSum": 3924.7,
+    "spdN": 2484,
+    "spdMax": 2.48,
+    "battMin": null,
+    "samples": 3120,
+    "avg": 1.58
+   },
+   "02": {
+    "name": "Kaax 2",
+    "dist": 0,
+    "spdSum": 0,
+    "spdN": 0,
+    "spdMax": 0,
+    "battMin": null,
+    "samples": 0,
+    "avg": 0
+   },
+   "03": {
+    "name": "Kaax 3",
+    "dist": 0,
+    "spdSum": 0,
+    "spdN": 0,
+    "spdMax": 0,
+    "battMin": null,
+    "samples": 0,
+    "avg": 0
+   }
+  },
+  "cellsStart": 0,
+  "gridKey": "19.68410_-99.02230_10_12x10",
+  "detections": {
+   "sargazo": 12,
+   "lirio": 4,
+   "basura": 3
+  },
+  "weights": {
+   "sargazo": 3.6,
+   "lirio": 1.9,
+   "basura": 1.0
+  },
+  "stats": {
+   "dur": 3120,
+   "dist": 1090.6,
+   "avg": 1.58,
+   "swept": 981.5,
+   "cellsArea": 600,
+   "cells": 6,
+   "active": 1
+  },
+  "weather": "Despejado 24 °C, viento 8 km/h",
+  "zone": {
+   "lat": 19.6841,
+   "lon": -99.0223
+  },
+  "demo": true
+ },
+ {
+  "id": 1786893300000,
+  "start": 1786893300000,
+  "end": 1786897740000,
+  "site": "Laguna de Ojo de Agua - canal este",
+  "ops": "Carvajal",
+  "user": "Yael García",
+  "notes": "DEMO — Mucho lirio en el canal; los rodillos se atascaron dos veces.",
+  "robots": {
+   "01": {
+    "name": "Kaax 1",
+    "dist": 1767.8,
+    "spdSum": 6362.9,
+    "spdN": 3678,
+    "spdMax": 2.47,
+    "battMin": null,
+    "samples": 4440,
+    "avg": 1.73
+   },
+   "02": {
+    "name": "Kaax 2",
+    "dist": 0,
+    "spdSum": 0,
+    "spdN": 0,
+    "spdMax": 0,
+    "battMin": null,
+    "samples": 0,
+    "avg": 0
+   },
+   "03": {
+    "name": "Kaax 3",
+    "dist": 0,
+    "spdSum": 0,
+    "spdN": 0,
+    "spdMax": 0,
+    "battMin": null,
+    "samples": 0,
+    "avg": 0
+   }
+  },
+  "cellsStart": 0,
+  "gridKey": "19.68250_-99.01980_10_12x10",
+  "detections": {
+   "sargazo": 21,
+   "lirio": 8,
+   "basura": 5
+  },
+  "weights": {
+   "sargazo": 4.1,
+   "lirio": 3.2,
+   "basura": 1.2
+  },
+  "stats": {
+   "dur": 4440,
+   "dist": 1767.8,
+   "avg": 1.73,
+   "swept": 1591.0,
+   "cellsArea": 1000,
+   "cells": 10,
+   "active": 1
+  },
+  "weather": "Nublado 21 °C, viento 14 km/h",
+  "zone": {
+   "lat": 19.6825,
+   "lon": -99.0198
+  },
+  "demo": true
+ },
+ {
+  "id": 1787178600000,
+  "start": 1787178600000,
+  "end": 1787184360000,
+  "site": "Presa Tecamac - vaso principal",
+  "ops": "Diego Quezada",
+  "user": "Carvajal",
+  "notes": "DEMO — Jornada limpia, sin incidencias. El robot 02 rindio mejor de lo habitual.",
+  "robots": {
+   "01": {
+    "name": "Kaax 1",
+    "dist": 2716.6,
+    "spdSum": 9779.3,
+    "spdN": 5494,
+    "spdMax": 2.69,
+    "battMin": null,
+    "samples": 5760,
+    "avg": 1.78
+   },
+   "02": {
+    "name": "Kaax 2",
+    "dist": 2535.6,
+    "spdSum": 9127.7,
+    "spdN": 4657,
+    "spdMax": 3.09,
+    "battMin": null,
+    "samples": 5760,
+    "avg": 1.96
+   },
+   "03": {
+    "name": "Kaax 3",
+    "dist": 0,
+    "spdSum": 0,
+    "spdN": 0,
+    "spdMax": 0,
+    "battMin": null,
+    "samples": 0,
+    "avg": 0
+   }
+  },
+  "cellsStart": 0,
+  "gridKey": "19.69020_-99.03100_10_12x10",
+  "detections": {
+   "sargazo": 56,
+   "lirio": 21,
+   "basura": 13
+  },
+  "weights": {
+   "sargazo": 21.6,
+   "lirio": 8.4,
+   "basura": 4.9
+  },
+  "stats": {
+   "dur": 5760,
+   "dist": 5252.3,
+   "avg": 1.863,
+   "swept": 4727.0,
+   "cellsArea": 2700,
+   "cells": 27,
+   "active": 2
+  },
+  "weather": "Soleado 27 °C, viento 5 km/h",
+  "zone": {
+   "lat": 19.6902,
+   "lon": -99.031
+  },
+  "demo": true
+ },
+ {
+  "id": 1787324400000,
+  "start": 1787324400000,
+  "end": 1787331000000,
+  "site": "Laguna de Ojo de Agua - orilla norte",
+  "ops": "Diego Quezada",
+  "user": "Diego Quezada",
+  "notes": "DEMO — Se perdio fix GPS unos minutos bajo los arboles de la ribera.",
+  "robots": {
+   "01": {
+    "name": "Kaax 1",
+    "dist": 3254.4,
+    "spdSum": 11715.7,
+    "spdN": 6039,
+    "spdMax": 2.55,
+    "battMin": null,
+    "samples": 6600,
+    "avg": 1.94
+   },
+   "02": {
+    "name": "Kaax 2",
+    "dist": 2643.9,
+    "spdSum": 9517.5,
+    "spdN": 5875,
+    "spdMax": 2.06,
+    "battMin": null,
+    "samples": 6600,
+    "avg": 1.62
+   },
+   "03": {
+    "name": "Kaax 3",
+    "dist": 0,
+    "spdSum": 0,
+    "spdN": 0,
+    "spdMax": 0,
+    "battMin": null,
+    "samples": 0,
+    "avg": 0
+   }
+  },
+  "cellsStart": 0,
+  "gridKey": "19.68410_-99.02230_10_12x10",
+  "detections": {
+   "sargazo": 67,
+   "lirio": 25,
+   "basura": 16
+  },
+  "weights": {
+   "sargazo": 27.1,
+   "lirio": 13.1,
+   "basura": 6.5
+  },
+  "stats": {
+   "dur": 6600,
+   "dist": 5898.3,
+   "avg": 1.782,
+   "swept": 5308.5,
+   "cellsArea": 3200,
+   "cells": 32,
+   "active": 2
+  },
+  "weather": "Parcialmente nublado 23 °C, viento 11 km/h",
+  "zone": {
+   "lat": 19.6841,
+   "lon": -99.0223
+  },
+  "demo": true
+ },
+ {
+  "id": 1787696100000,
+  "start": 1787696100000,
+  "end": 1787699880000,
+  "site": "Laguna de Ojo de Agua - canal este",
+  "ops": "Carvajal",
+  "user": "Yael García",
+  "notes": "DEMO — Bastante PET y unicel flotando cerca del desague.",
+  "robots": {
+   "01": {
+    "name": "Kaax 1",
+    "dist": 1570.2,
+    "spdSum": 5651.1,
+    "spdN": 3022,
+    "spdMax": 2.94,
+    "battMin": null,
+    "samples": 3780,
+    "avg": 1.87
+   },
+   "02": {
+    "name": "Kaax 2",
+    "dist": 1840.9,
+    "spdSum": 6625.8,
+    "spdN": 3601,
+    "spdMax": 2.46,
+    "battMin": null,
+    "samples": 3780,
+    "avg": 1.84
+   },
+   "03": {
+    "name": "Kaax 3",
+    "dist": 0,
+    "spdSum": 0,
+    "spdN": 0,
+    "spdMax": 0,
+    "battMin": null,
+    "samples": 0,
+    "avg": 0
+   }
+  },
+  "cellsStart": 0,
+  "gridKey": "19.68250_-99.01980_10_12x10",
+  "detections": {
+   "sargazo": 37,
+   "lirio": 14,
+   "basura": 9
+  },
+  "weights": {
+   "sargazo": 10.8,
+   "lirio": 7.0,
+   "basura": 3.4
+  },
+  "stats": {
+   "dur": 3780,
+   "dist": 3411.0,
+   "avg": 1.854,
+   "swept": 3069.9,
+   "cellsArea": 1800,
+   "cells": 18,
+   "active": 2
+  },
+  "weather": "Despejado 24 °C, viento 8 km/h",
+  "zone": {
+   "lat": 19.6825,
+   "lon": -99.0198
+  },
+  "demo": true
+ },
+ {
+  "id": 1787931000000,
+  "start": 1787931000000,
+  "end": 1787938680000,
+  "site": "Presa Tecamac - vaso principal",
+  "ops": "Carvajal",
+  "user": "Carvajal",
+  "notes": "DEMO — Agua muy quieta; buen dia para cubrir area.",
+  "robots": {
+   "01": {
+    "name": "Kaax 1",
+    "dist": 3432.0,
+    "spdSum": 12354.3,
+    "spdN": 6678,
+    "spdMax": 2.66,
+    "battMin": null,
+    "samples": 7680,
+    "avg": 1.85
+   },
+   "02": {
+    "name": "Kaax 2",
+    "dist": 3485.8,
+    "spdSum": 12548.2,
+    "spdN": 6435,
+    "spdMax": 2.96,
+    "battMin": null,
+    "samples": 7680,
+    "avg": 1.95
+   },
+   "03": {
+    "name": "Kaax 3",
+    "dist": 3010.5,
+    "spdSum": 10837.8,
+    "spdN": 6021,
+    "spdMax": 2.75,
+    "battMin": null,
+    "samples": 7680,
+    "avg": 1.8
+   }
+  },
+  "cellsStart": 0,
+  "gridKey": "19.69020_-99.03100_10_12x10",
+  "detections": {
+   "sargazo": 130,
+   "lirio": 49,
+   "basura": 31
+  },
+  "weights": {
+   "sargazo": 45.2,
+   "lirio": 14.4,
+   "basura": 8.9
+  },
+  "stats": {
+   "dur": 7680,
+   "dist": 9928.4,
+   "avg": 1.868,
+   "swept": 8935.5,
+   "cellsArea": 6200,
+   "cells": 62,
+   "active": 3
+  },
+  "weather": "Nublado 21 °C, viento 14 km/h",
+  "zone": {
+   "lat": 19.6902,
+   "lon": -99.031
+  },
+  "demo": true
+ },
+ {
+  "id": 1788215400000,
+  "start": 1788215400000,
+  "end": 1788223920000,
+  "site": "Laguna de Ojo de Agua - orilla norte",
+  "ops": "Yael García",
+  "user": "Diego Quezada",
+  "notes": "DEMO — Se corto temprano por lluvia.",
+  "robots": {
+   "01": {
+    "name": "Kaax 1",
+    "dist": 4068.3,
+    "spdSum": 14643.8,
+    "spdN": 6875,
+    "spdMax": 3.3,
+    "battMin": null,
+    "samples": 8520,
+    "avg": 2.13
+   },
+   "02": {
+    "name": "Kaax 2",
+    "dist": 4928.7,
+    "spdSum": 17742.9,
+    "spdN": 7748,
+    "spdMax": 3.63,
+    "battMin": null,
+    "samples": 8520,
+    "avg": 2.29
+   },
+   "03": {
+    "name": "Kaax 3",
+    "dist": 4022.5,
+    "spdSum": 14480.7,
+    "spdN": 7426,
+    "spdMax": 2.78,
+    "battMin": null,
+    "samples": 8520,
+    "avg": 1.95
+   }
+  },
+  "cellsStart": 0,
+  "gridKey": "19.68410_-99.02230_10_12x10",
+  "detections": {
+   "sargazo": 189,
+   "lirio": 72,
+   "basura": 45
+  },
+  "weights": {
+   "sargazo": 68.6,
+   "lirio": 17.6,
+   "basura": 11.8
+  },
+  "stats": {
+   "dur": 8520,
+   "dist": 13019.5,
+   "avg": 2.126,
+   "swept": 11717.6,
+   "cellsArea": 9000,
+   "cells": 90,
+   "active": 3
+  },
+  "weather": "Soleado 27 °C, viento 5 km/h",
+  "zone": {
+   "lat": 19.6841,
+   "lon": -99.0223
+  },
+  "demo": true
+ },
+ {
+  "id": 1788534000000,
+  "start": 1788534000000,
+  "end": 1788541260000,
+  "site": "Laguna de Ojo de Agua - canal este",
+  "ops": "Diego Quezada",
+  "user": "Yael García",
+  "notes": "DEMO — Primera salida con los rodillos nuevos: empujan mejor el material.",
+  "robots": {
+   "01": {
+    "name": "Kaax 1",
+    "dist": 3053.5,
+    "spdSum": 10991.0,
+    "spdN": 6039,
+    "spdMax": 2.66,
+    "battMin": null,
+    "samples": 7260,
+    "avg": 1.82
+   },
+   "02": {
+    "name": "Kaax 2",
+    "dist": 3688.9,
+    "spdSum": 13278.7,
+    "spdN": 6205,
+    "spdMax": 3.35,
+    "battMin": null,
+    "samples": 7260,
+    "avg": 2.14
+   },
+   "03": {
+    "name": "Kaax 3",
+    "dist": 3420.9,
+    "spdSum": 12313.4,
+    "spdN": 6036,
+    "spdMax": 2.94,
+    "battMin": null,
+    "samples": 7260,
+    "avg": 2.04
+   }
+  },
+  "cellsStart": 0,
+  "gridKey": "19.68250_-99.01980_10_12x10",
+  "detections": {
+   "sargazo": 144,
+   "lirio": 55,
+   "basura": 34
+  },
+  "weights": {
+   "sargazo": 38.3,
+   "lirio": 13.8,
+   "basura": 7.8
+  },
+  "stats": {
+   "dur": 7260,
+   "dist": 10163.3,
+   "avg": 2.001,
+   "swept": 9147.0,
+   "cellsArea": 6900,
+   "cells": 69,
+   "active": 3
+  },
+  "weather": "Parcialmente nublado 23 °C, viento 11 km/h",
+  "zone": {
+   "lat": 19.6825,
+   "lon": -99.0198
+  },
+  "demo": true
+ },
+ {
+  "id": 1788794100000,
+  "start": 1788794100000,
+  "end": 1788803400000,
+  "site": "Presa Tecamac - vaso principal",
+  "ops": "Yael García",
+  "user": "Carvajal",
+  "notes": "DEMO — Sargazo acumulado contra la orilla por el viento del norte.",
+  "robots": {
+   "01": {
+    "name": "Kaax 1",
+    "dist": 4915.6,
+    "spdSum": 17694.6,
+    "spdN": 8507,
+    "spdMax": 2.81,
+    "battMin": null,
+    "samples": 9300,
+    "avg": 2.08
+   },
+   "02": {
+    "name": "Kaax 2",
+    "dist": 3959.5,
+    "spdSum": 14252.5,
+    "spdN": 7541,
+    "spdMax": 2.83,
+    "battMin": null,
+    "samples": 9300,
+    "avg": 1.89
+   },
+   "03": {
+    "name": "Kaax 3",
+    "dist": 4822.7,
+    "spdSum": 17360.8,
+    "spdN": 8903,
+    "spdMax": 2.76,
+    "battMin": null,
+    "samples": 9300,
+    "avg": 1.95
+   }
+  },
+  "cellsStart": 0,
+  "gridKey": "19.69020_-99.03100_10_12x10",
+  "detections": {
+   "sargazo": 184,
+   "lirio": 70,
+   "basura": 44
+  },
+  "weights": {
+   "sargazo": 52.9,
+   "lirio": 11.7,
+   "basura": 8.8
+  },
+  "stats": {
+   "dur": 9300,
+   "dist": 13697.9,
+   "avg": 1.976,
+   "swept": 12328.1,
+   "cellsArea": 8800,
+   "cells": 88,
+   "active": 3
+  },
+  "weather": "Despejado 24 °C, viento 8 km/h",
+  "zone": {
+   "lat": 19.6902,
+   "lon": -99.031
+  },
+  "demo": true
+ },
+ {
+  "id": 1788962400000,
+  "start": 1788962400000,
+  "end": 1788970680000,
+  "site": "Laguna de Ojo de Agua - orilla norte",
+  "ops": "Diego Quezada",
+  "user": "Diego Quezada",
+  "notes": "DEMO — Mucho lirio en el canal; los rodillos se atascaron dos veces.",
+  "robots": {
+   "01": {
+    "name": "Kaax 1",
+    "dist": 4062.5,
+    "spdSum": 14623.6,
+    "spdN": 6617,
+    "spdMax": 3.18,
+    "battMin": null,
+    "samples": 8280,
+    "avg": 2.21
+   },
+   "02": {
+    "name": "Kaax 2",
+    "dist": 4844.4,
+    "spdSum": 17439.5,
+    "spdN": 6948,
+    "spdMax": 3.57,
+    "battMin": null,
+    "samples": 8280,
+    "avg": 2.51
+   },
+   "03": {
+    "name": "Kaax 3",
+    "dist": 4415.2,
+    "spdSum": 15892.9,
+    "spdN": 7829,
+    "spdMax": 2.76,
+    "battMin": null,
+    "samples": 8280,
+    "avg": 2.03
+   }
+  },
+  "cellsStart": 0,
+  "gridKey": "19.68410_-99.02230_10_12x10",
+  "detections": {
+   "sargazo": 199,
+   "lirio": 76,
+   "basura": 47
+  },
+  "weights": {
+   "sargazo": 52.1,
+   "lirio": 14.6,
+   "basura": 10.0
+  },
+  "stats": {
+   "dur": 8280,
+   "dist": 13322.1,
+   "avg": 2.242,
+   "swept": 11989.9,
+   "cellsArea": 9500,
+   "cells": 95,
+   "active": 3
+  },
+  "weather": "Nublado 21 °C, viento 14 km/h",
+  "zone": {
+   "lat": 19.6841,
+   "lon": -99.0223
+  },
+  "demo": true
+ }
+]
